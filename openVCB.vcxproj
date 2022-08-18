@@ -146,6 +146,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="gorder\Graph.cpp" />
+    <ClCompile Include="gorder\UnitHeap.cpp" />
+    <ClCompile Include="gorder\Util.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="opennVCBAssembler.cpp" />
     <ClCompile Include="openVCB.cpp" />
@@ -155,6 +158,9 @@
     <ClCompile Include="openVCBSim.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="gorder\Graph.h" />
+    <ClInclude Include="gorder\UnitHeap.h" />
+    <ClInclude Include="gorder\Util.h" />
     <ClInclude Include="openVCB.h" />
     <ClInclude Include="openVCBExpr.h" />
   </ItemGroup>

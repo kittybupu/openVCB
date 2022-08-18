@@ -178,7 +178,7 @@ namespace openVCB {
 		void toggleLatch(glm::ivec2 pos);
 
 		// Preprocesses the image into the simulation format
-		virtual void preprocess(bool optimize = true);
+		virtual void preprocess(bool useGorder = false);
 
 		// Advances the simulation by n ticks
 		virtual void tick(int numTicks = 1);

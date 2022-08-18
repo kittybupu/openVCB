@@ -18,8 +18,8 @@ int main() {
 	proj->readFromVCB("sampleProject.vcb");
 
 	times.push_back({ "Project preprocess", high_resolution_clock::now() });
-	const bool optimize = true;
-	proj->preprocess(optimize);
+	const bool useGorder = false;
+	proj->preprocess(useGorder);
 
 	times.push_back({ "VMem assembly", high_resolution_clock::now() });
 	proj->assembleVmem();

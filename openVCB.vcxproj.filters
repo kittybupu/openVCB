@@ -36,12 +36,30 @@
     <ClCompile Include="openVCBReader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="gorder\Graph.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gorder\UnitHeap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gorder\Util.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="openVCB.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="openVCBExpr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gorder\Graph.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gorder\UnitHeap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gorder\Util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
