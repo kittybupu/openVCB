@@ -13,6 +13,10 @@ https://store.steampowered.com/app/1885690/Virtual_Circuit_Board/
 * A more flexible assembler which remains 100% compatible with assembly programs written in VCB. (**VERY NOT SECURE.** Load trusted files only.)
 * A .vcb reader which decodes the logic gates and some select settings. More to follow. (**VERY NOT SECURE.** Load trusted files only.)
 
+# Dependencies
+* GLM
+* Gorder (included)
+
 ## License
 This project is licensed under the GPL 3 license. 
 **Additionally, users agree to never distribute this library together with a graphical .vcb editor.** (Viewers are fine.)
