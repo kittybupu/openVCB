@@ -184,6 +184,11 @@ namespace openVCB {
 		std::string godotObj = ss.str();
 		stream.close();
 
+		if (godotObj.size() == 0) {
+			printf("Could not read file \"%s\"\n", filePath.c_str());
+			exit(-1);
+		}
+
 		// split out assembly
 		int pos = 0;
 		split(godotObj, "\"assembly\": \"", pos);
