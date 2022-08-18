@@ -5,10 +5,7 @@
 #include <cctype>
 #include <cstring>
 #include <string>
-#include <math.h> 
 #include <unordered_map>
-
-#define PI 3.14159265358979323846 
 
 using namespace std;
 
@@ -256,8 +253,7 @@ long long openVCB::evalExpr(const char* expr,
 	std::unordered_map<std::string, long long>& symbols) {
 	parser p(symbols);
 	auto res = p.eval_expr((char*)expr);
-	if (*p.errormsg) {
+	if (*p.errormsg)
 		printf("error: \"%s\" %s\n", expr, p.errormsg);
-	}
 	return res;
 }
