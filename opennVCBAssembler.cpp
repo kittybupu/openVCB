@@ -39,7 +39,7 @@ namespace openVCB {
 		return string(buff + start, buff + end);
 	}
 
-	void Project::assemblyVMem() {
+	void Project::assembleVmem() {
 		if (!vmem) return;
 		// printf("%s\n", assembly.c_str());
 

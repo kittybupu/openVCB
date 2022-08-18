@@ -172,7 +172,7 @@ namespace openVCB {
 		std::pair<Ink, int> sample(glm::ivec2 pos);
 
 		// Assemble the vmem from this->assembly
-		void assemblyVMem();
+		void assembleVmem();
 
 		// Dump vmem contents to file
 		void dumpVMemToText(std::string p);

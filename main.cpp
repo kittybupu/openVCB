@@ -22,7 +22,7 @@ int main() {
 	proj->preprocess(optimize);
 
 	times.push_back({ "VMem assembly", high_resolution_clock::now() });
-	proj->assemblyVMem();
+	proj->assembleVmem();
 
 	printf("Loaded %d groups and %d connections.\n", proj->numGroups, proj->writeMap.nnz);
 	printf("Simulating 1 million ticks into the future...\n");
