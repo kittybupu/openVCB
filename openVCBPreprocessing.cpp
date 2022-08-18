@@ -190,7 +190,7 @@ namespace openVCB {
 			g.Transform(transformOrder);
 
 			std::vector<int> order;
-			g.GorderGreedy(order, 2);
+			g.GorderGreedy(order, 64);
 
 			//for (size_t i = 0; i < order.size(); i++) {
 			//	printf("%d -> %d\n", i, order[i]);
