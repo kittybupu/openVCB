@@ -24,7 +24,7 @@ namespace openVCB {
 						bool isOn = getOn((Ink)states[vmData.gids[k]].ink);
 						if (((data >> k) & 1) != isOn) {
 							states[vmData.gids[k]].activeInputs = 1;
-							if (states[vmData.gids[k]].visited) return;
+							if (states[vmData.gids[k]].visited) continue;
 							states[vmData.gids[k]].visited = 1;
 							updateQ[0][qSize++] = vmData.gids[k];
 						}
