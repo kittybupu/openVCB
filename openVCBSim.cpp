@@ -1,6 +1,8 @@
 
 #include "openVCB.h"
 
+
+
 namespace openVCB {
 	using namespace std;
 	using namespace glm;
@@ -60,7 +62,7 @@ namespace openVCB {
 				}
 
 #ifdef OVCB_MT
-#pragma omp parallel for schedule(dynamic, 1024 * 16) if(numEvents > 32 * 1024)
+#pragma omp parallel for schedule(static, 4 * 1024) num_threads(2) if(numEvents > 8 * 1024)
 #endif
 				// Main update loop
 				for (int i = 0; i < numEvents; i++) {
@@ -128,7 +130,7 @@ namespace openVCB {
 
 						// Update actives
 #ifdef OVCB_MT
-						const int lastNxtInput = states[nxtId].activeInputs.fetch_add(delta);
+						const int lastNxtInput = states[nxtId].activeInputs.fetch_add(delta, std::memory_order_relaxed);
 #else
 						const int lastNxtInput = states[nxtId].activeInputs;
 						states[nxtId].activeInputs = lastNxtInput + delta;

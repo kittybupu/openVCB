@@ -188,8 +188,8 @@ namespace openVCB {
 #ifdef OVCB_MT
 			unsigned char expect = 0;
 			// Check if this event is already in queue
-			if (states[gid].visited.compare_exchange_strong(expect, 1)) {
-				updateQ[1][qSize.fetch_add(1)] = gid;
+			if (states[gid].visited.compare_exchange_strong(expect, 1, std::memory_order_relaxed)) {
+				updateQ[1][qSize.fetch_add(1, std::memory_order_relaxed)] = gid;
 				return true;
 			}
 			return false;
