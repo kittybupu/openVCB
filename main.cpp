@@ -15,7 +15,7 @@ int main() {
 
 	// Read .vcb file
 	times.push_back({ "File read", high_resolution_clock::now() });
-	proj->readFromVCB("Jerry_DTX1080ti_V1_1_Graivty_Demo.vcb");
+	proj->readFromVCB("sampleProject.vcb");
 
 	times.push_back({ "Project preprocess", high_resolution_clock::now() });
 	const bool optimize = true;
