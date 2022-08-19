@@ -97,6 +97,7 @@ namespace openVCB {
 		return (int)ink >> 7;
 	}
 
+	// Gets the string name of the ink
 	const char* getInkString(Ink ink);
 
 	struct InkState {
