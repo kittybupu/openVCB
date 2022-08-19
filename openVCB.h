@@ -26,8 +26,8 @@ namespace openVCB {
 	};
 
 	/// <summary>
-	/// 5 bit state.
-	/// 4 bit type + 1 active bit
+	/// 8 bit state.
+	/// 7 bit type + 1 active bit
 	/// </summary>
 	enum class Ink {
 		None = 0,
@@ -52,11 +52,13 @@ namespace openVCB {
 		LatchOff,
 		LedOff,
 
-		Trace = 17,
+		numTypes,
+
+		Trace = 129,
 		Read,
 		Write,
 
-		Buffer = 21,
+		Buffer = 133,
 		Or,
 		Nand,
 
@@ -69,9 +71,7 @@ namespace openVCB {
 
 		Clock,
 		Latch,
-		Led,
-
-		size
+		Led
 	};
 
 	extern const int colorPallet[];
@@ -79,23 +79,25 @@ namespace openVCB {
 
 	// Sets the ink type to be on or off
 	inline Ink setOn(Ink ink, bool state) {
-		return (Ink)(((int)ink & 0xf) | (state << 4));
+		return (Ink)(((int)ink & 0x7f) | (state << 7));
 	}
 
 	// Sets the ink type to be on
 	inline Ink setOn(Ink ink) {
-		return (Ink)(((int)ink & 0xf) | 16);
+		return (Ink)(((int)ink & 0x7f) | 128);
 	}
 
 	// Sets the ink type to be off
 	inline Ink setOff(Ink ink) {
-		return (Ink)((int)ink & 0xf);
+		return (Ink)((int)ink & 0x7f);
 	}
 
 	// Gets the ink active state
 	inline bool getOn(Ink ink) {
-		return (int)ink >> 4;
+		return (int)ink >> 7;
 	}
+
+	const char* getInkString(Ink ink);
 
 	struct InkState {
 #ifdef OVCB_MT

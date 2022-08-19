@@ -140,7 +140,7 @@ namespace openVCB {
 						// We can skip any updates that do not hover around 0
 						// with a few exceptions.
 						if (lastNxtInput == 0 || lastNxtInput + delta == 0 ||
-							nxtInk == Ink::LedOff || nxtInk == Ink::XorOff || nxtInk == Ink::XnorOff)
+							nxtInk == Ink::XorOff || nxtInk == Ink::XnorOff)
 							tryEmit(nxtId);
 					}
 				}

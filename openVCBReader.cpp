@@ -104,6 +104,13 @@ namespace openVCB {
 		"LED (On)",
 	};
 
+	const char* getInkString(Ink ink) {
+		int i = (int)ink;
+		if (i >= 128) i += (int)Ink::numTypes - 128;
+		if (i < 0 || i > 2 * (int)Ink::numTypes) return "None";
+		return inkNames[i];
+	}
+
 	inline int col2int(int col) {
 		int r = col & 0xff0000;
 		int g = col & 0xff00;
@@ -136,8 +143,10 @@ namespace openVCB {
 			break;
 
 		default:
-			for (int i = 0; i < (int)Ink::size; i++)
+			for (int i = 0; i < 2 * (int)Ink::numTypes; i++)
 				if (colorPallet[i] == col) {
+					if (i >= (int)Ink::numTypes)
+						i += 128 - (int)Ink::numTypes;
 					ink = (Ink)i;
 					break;
 				}

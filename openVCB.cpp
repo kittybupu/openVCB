@@ -43,7 +43,7 @@ namespace openVCB {
 		if (idx == -1) return { Ink::None, -1 };
 
 		unsigned char state = states[idx].ink;
-		type = (Ink)(((int)type & 0xef) | (state & 0x10));
+		type = (Ink)(((int)type & 0x7f) | (state & 0x80));
 		return { type, idx };
 	}
 }
