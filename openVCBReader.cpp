@@ -261,7 +261,7 @@ namespace openVCB {
 		if (vmemFlag) {
 			vmemSize = 1ull << vmAddr.numBits;
 			vmem = new int[vmemSize];
-			memset(vmem, 0, vmemSize);
+			memset(vmem, 0, 4 * vmemSize);
 		}
 
 		unsigned char* cc = &logicData[0];
