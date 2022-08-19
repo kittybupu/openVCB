@@ -1,7 +1,6 @@
+// Code for simulations
 
 #include "openVCB.h"
-
-
 
 namespace openVCB {
 	using namespace std;

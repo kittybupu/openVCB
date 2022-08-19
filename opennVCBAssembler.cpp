@@ -58,7 +58,7 @@ namespace openVCB {
 			// Parse this stuff
 			if (prefix(buff, "symbol") || prefix(buff, "resymb")) {}
 			else if (prefix(buff, "unsymb")) {}
-			else if (prefix(buff, "pointer")) {
+			else if (prefix(buff, "pointer") || prefix(buff, "repoint")) {
 				int k = 7;
 				string label = getNext(buff, k);
 				string addr = getNext(buff, k);
@@ -96,7 +96,7 @@ namespace openVCB {
 				string label = getNext(buff, k);
 				vars.erase(label);
 			}
-			else if (prefix(buff, "pointer")) {
+			else if (prefix(buff, "pointer") || prefix(buff, "repoint")) {
 				int k = 7;
 				string label = getNext(buff, k);
 				string addr = getNext(buff, k);
@@ -122,16 +122,18 @@ namespace openVCB {
 		for (int i = 0; i < vmAddr.numBits; i++) {
 			ivec2 pos = vmAddr.pos + i * vmAddr.stride;
 			vmAddr.gids[i] = indexImage[pos.x + pos.y * width];
-			if ((Ink)states[vmAddr.gids[i]].ink != Ink::LatchOff) {
-				printf("error: No address latch at VMem position");
+			if (vmAddr.gids[i] == -1 ||
+				setOff((Ink)states[vmAddr.gids[i]].ink) != Ink::LatchOff) {
+				printf("error: No address latch at VMem position %d %d\n", pos.x, pos.y);
 				exit(-1);
 			}
 		}
 		for (int i = 0; i < vmData.numBits; i++) {
 			ivec2 pos = vmData.pos + i * vmData.stride;
 			vmData.gids[i] = indexImage[pos.x + pos.y * width];
-			if ((Ink)states[vmData.gids[i]].ink != Ink::LatchOff) {
-				printf("error: No data latch at VMem position");
+			if (vmAddr.gids[i] == -1 ||
+				setOff((Ink)states[vmData.gids[i]].ink) != Ink::LatchOff) {
+				printf("error: No data latch at VMem position %d %d\n", pos.x, pos.y);
 				exit(-1);
 			}
 		}

@@ -1,3 +1,4 @@
+// Code for file reading
 
 #include "openVCB.h"
 
@@ -225,6 +226,8 @@ namespace openVCB {
 		int vmemArr[14];
 		{
 			auto dat = split(godotObj, " ]", pos);
+			printf("%s dat", dat.c_str());
+
 			std::stringstream s(dat);
 			std::string val;
 			for (size_t i = 0; i < 14; i++) {
@@ -242,14 +245,18 @@ namespace openVCB {
 		vmAddr.numBits = std::max(0, std::min(vmemArr[0], 32));
 		vmAddr.pos.x = vmemArr[1];
 		vmAddr.pos.y = vmemArr[2];
-		vmAddr.stride.x = vmemArr[3];
+		vmAddr.stride.x = -vmemArr[3];
 		vmAddr.stride.y = vmemArr[4];
+		vmAddr.size.x = vmemArr[5];
+		vmAddr.size.y = vmemArr[6];
 
 		vmData.numBits = std::max(0, std::min(vmemArr[7], 32));
 		vmData.pos.x = vmemArr[8];
 		vmData.pos.y = vmemArr[9];
-		vmData.stride.x = vmemArr[10];
+		vmData.stride.x = -vmemArr[10];
 		vmData.stride.y = vmemArr[11];
+		vmData.size.x = vmemArr[12];
+		vmData.size.y = vmemArr[13];
 
 		if (vmemFlag) {
 			vmemSize = 1ull << vmAddr.numBits;
@@ -274,6 +281,35 @@ namespace openVCB {
 #pragma omp parallel for schedule(static, 8196)
 			for (int i = 0; i < imSize / 4; i++)
 				image[i] = color2ink(((int*)originalImage)[i]);
+
+			// Overwrite latch locations for vmem
+			if (vmemFlag) {
+				for (int i = 0; i < vmAddr.numBits; i++) {
+					auto start = vmAddr.pos + i * vmAddr.stride;
+					auto end = start + vmAddr.size;
+					for (auto pos = start; pos.x < end.x; pos.x++) {
+						for (pos.y = start.y; pos.y < end.y; pos.y++) {
+							if (pos.x < 0 || pos.x >= width ||
+								pos.y < 0 || pos.y >= height)
+								continue;
+							image[pos.x + pos.y * width] = Ink::LatchOff;
+						}
+					}
+				}
+
+				for (int i = 0; i < vmData.numBits; i++) {
+					auto start = vmData.pos + i * vmData.stride;
+					auto end = start + vmData.size;
+					for (auto pos = start; pos.x < end.x; pos.x++) {
+						for (pos.y = start.y; pos.y < end.y; pos.y++) {
+							if (pos.x < 0 || pos.x >= width ||
+								pos.y < 0 || pos.y >= height)
+								continue;
+							image[pos.x + pos.y * width] = Ink::LatchOff;
+						}
+					}
+				}
+			}
 
 			// printf("Loaded image %dx%d (%d bytes)\n", width, height, dSize);
 		}

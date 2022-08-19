@@ -1,4 +1,8 @@
 #pragma once
+/*
+* Instruction expression parsing code.
+*/
+
 #include <unordered_map>
 #include <string>
 

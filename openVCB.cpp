@@ -1,3 +1,4 @@
+// Code for mostly misc stuff.
 
 #include "openVCB.h"
 

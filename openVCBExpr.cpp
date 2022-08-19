@@ -1,3 +1,5 @@
+// Code for instruction expression parsing.
+
 #include "openVCBExpr.h"
 
 #include <iostream>

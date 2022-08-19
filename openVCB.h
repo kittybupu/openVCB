@@ -1,4 +1,9 @@
 #pragma once
+/*
+* This is the primary header ifle for openVCB
+*/
+
+
 #include <glm/glm.hpp>
 #include <string>
 #include <vector>
@@ -11,16 +16,13 @@
 #endif
 
 /// <summary>
-/// TODO: 
-/// Try sorting by component as well. 
-/// I see it going both ways
-/// 
+/// Primary namespace for openVCB
 /// </summary>
-
 namespace openVCB {
 	struct LatchInterface {
 		glm::ivec2 pos;
 		glm::ivec2 stride;
+		glm::ivec2 size;
 		int numBits;
 		int gids[64];
 	};
@@ -28,6 +30,10 @@ namespace openVCB {
 	/// <summary>
 	/// 8 bit state.
 	/// 7 bit type + 1 active bit
+	/// 
+	/// Add potential ink types here. 
+	/// It is VERY important to keep components in pairs for on and off to
+	/// to make sure the values are aligned correctly. 
 	/// </summary>
 	enum class Ink {
 		None = 0,

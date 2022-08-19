@@ -1,3 +1,4 @@
+// Code for image proprocessing and graph generation
 
 #include "openVCB.h"
 #include <unordered_set>
@@ -150,8 +151,8 @@ namespace openVCB {
 
 			for (int k = 0; k < 4; k++) {
 				ivec2 np = p + fourNeighbors[k];
-				if (np.x < 0 || np.x > width ||
-					np.y < 0 || np.y > height) continue;
+				if (np.x < 0 || np.x >= width ||
+					np.y < 0 || np.y >= height) continue;
 
 				const int dstGID = indexImage[np.x + np.y * width];
 				if (srcGID != dstGID && dstGID != -1 && conSet.insert(((long long)srcGID << 32) | dstGID).second)
@@ -168,8 +169,8 @@ namespace openVCB {
 
 			for (int k = 0; k < 4; k++) {
 				ivec2 np = p + fourNeighbors[k];
-				if (np.x < 0 || np.x > width ||
-					np.y < 0 || np.y > height) continue;
+				if (np.x < 0 || np.x >= width ||
+					np.y < 0 || np.y >= height) continue;
 
 				const int srcGID = indexImage[np.x + np.y * width];
 				if (srcGID != dstGID && srcGID != -1 && conSet.insert(((long long)srcGID << 32) | dstGID).second)
