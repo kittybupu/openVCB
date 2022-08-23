@@ -187,6 +187,38 @@ namespace openVCB {
 		return data.substr(begin, end - begin);
 	}
 
+	bool Project::processLogicData(std::vector<unsigned char> logicData, int headerSize) {
+		int* header = (int*)&logicData[logicData.size() - headerSize];
+
+		const int imgDSize = header[5];
+		width = header[3];
+		height = header[1];
+		
+		unsigned char* cc = &logicData[0];
+		size_t ccSize = logicData.size() - headerSize;
+
+		unsigned long long const imSize = ZSTD_getFrameContentSize(cc, ccSize);
+
+		if (imSize == ZSTD_CONTENTSIZE_ERROR) {
+			printf("error: not compressed by zstd!");
+			return 0;
+		}
+		else if (imSize == ZSTD_CONTENTSIZE_UNKNOWN) {
+			printf("error: original size unknown!");
+			return 0;
+		}
+		else {
+			originalImage = new unsigned char[imSize];
+			image = new Ink[imSize];
+			size_t const dSize = ZSTD_decompress(originalImage, imSize, cc, ccSize);
+
+#pragma omp parallel for schedule(static, 8196)
+			for (int i = 0; i < imSize / 4; i++)
+				image[i] = color2ink(((int*)originalImage)[i]);
+			return 1;
+		}
+	}
+
 	void Project::readFromVCB(std::string filePath) {
 		std::ifstream stream(filePath);
 		std::stringstream ss;
@@ -236,11 +268,6 @@ namespace openVCB {
 			}
 		}
 
-		int* header = (int*)&logicData[logicData.size() - 24];
-		const int imgDSize = header[5];
-		width = header[3];
-		height = header[1];
-
 		// Set the vmem settings
 		vmAddr.numBits = std::max(0, std::min(vmemArr[0], 32));
 		vmAddr.pos.x = vmemArr[1];
@@ -264,24 +291,7 @@ namespace openVCB {
 			memset(vmem, 0, 4 * vmemSize);
 		}
 
-		unsigned char* cc = &logicData[0];
-		size_t ccSize = logicData.size() - 24;
-
-		unsigned long long const imSize = ZSTD_getFrameContentSize(cc, ccSize);
-
-		if (imSize == ZSTD_CONTENTSIZE_ERROR)
-			printf("error: not compressed by zstd!");
-		else if (imSize == ZSTD_CONTENTSIZE_UNKNOWN)
-			printf("error: original size unknown!");
-		else {
-			originalImage = new unsigned char[imSize];
-			image = new Ink[imSize];
-			size_t const dSize = ZSTD_decompress(originalImage, imSize, cc, ccSize);
-
-#pragma omp parallel for schedule(static, 8196)
-			for (int i = 0; i < imSize / 4; i++)
-				image[i] = color2ink(((int*)originalImage)[i]);
-
+		if (Project::processLogicData(logicData, 24)) {
 			// Overwrite latch locations for vmem
 			if (vmemFlag) {
 				for (int i = 0; i < vmAddr.numBits; i++) {

@@ -173,6 +173,12 @@ namespace openVCB {
 		// Builds a project from an image. Remember to configure VMem
 		void readFromVCB(std::string p);
 
+		// Decode base64 data from clipboard, then process logic data
+		void readFromBlueprint(std::string clipboardData);
+
+		// Decompress zstd data to an image
+		bool processLogicData(std::vector<unsigned char> logicData, int headerSize);
+
 		// Samples the ink at a pixel. Returns ink and group id
 		std::pair<Ink, int> sample(glm::ivec2 pos);
 

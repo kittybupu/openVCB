@@ -152,6 +152,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="opennVCBAssembler.cpp" />
     <ClCompile Include="openVCB.cpp" />
+    <ClCompile Include="openVCBBlueprint.cpp" />
     <ClCompile Include="openVCBExpr.cpp" />
     <ClCompile Include="openVCBPreprocessing.cpp" />
     <ClCompile Include="openVCBReader.cpp" />
