@@ -258,7 +258,7 @@ namespace openVCB {
 		int vmemArr[14];
 		{
 			auto dat = split(godotObj, " ]", pos);
-			printf("%s dat", dat.c_str());
+			// printf("%s dat", dat.c_str());
 
 			std::stringstream s(dat);
 			std::string val;

@@ -14,6 +14,7 @@ https://store.steampowered.com/app/1885690/Virtual_Circuit_Board/
 * A .vcb reader which decodes the logic gates and some select settings. More to follow. (**VERY NOT SECURE.** Load trusted files only.)
 
 # Dependencies
+* ZStd
 * GLM
 * Gorder (included)
 
