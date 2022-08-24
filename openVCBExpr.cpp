@@ -56,7 +56,7 @@ long long parser::eval_expr(char* exp) {
 }
 
 void parser::eval_expr1(long long& result) {
-	register char op;
+	char op;
 	long long temp;
 	eval_expr2(result);
 	while ((op = *token) == '|') {
@@ -67,7 +67,7 @@ void parser::eval_expr1(long long& result) {
 }
 
 void parser::eval_expr2(long long& result) {
-	register char op;
+	char op;
 	long long temp;
 	eval_expr3(result);
 	while ((op = *token) == '^') {
@@ -78,7 +78,7 @@ void parser::eval_expr2(long long& result) {
 }
 
 void parser::eval_expr3(long long& result) {
-	register char op;
+	char op;
 	long long temp;
 	eval_expr4(result);
 	while ((op = *token) == '&') {
@@ -89,7 +89,7 @@ void parser::eval_expr3(long long& result) {
 }
 
 void parser::eval_expr4(long long& result) {
-	register char op;
+	char op;
 	long long temp;
 	eval_expr5(result);
 	while ((op = *token) == '>' || op == '<') {
@@ -107,7 +107,7 @@ void parser::eval_expr4(long long& result) {
 }
 
 void parser::eval_expr5(long long& result) {
-	register char op;
+	char op;
 	long long temp;
 	eval_expr6(result);
 	while ((op = *token) == '+' || op == '-') {
@@ -126,7 +126,7 @@ void parser::eval_expr5(long long& result) {
 
 // Multiply or divide two factors.
 void parser::eval_expr6(long long& result) {
-	register char op;
+	char op;
 	long long temp;
 	eval_expr7(result);
 	while ((op = *token) == '*' || op == '/' || op == '%') {
@@ -147,7 +147,7 @@ void parser::eval_expr6(long long& result) {
 }
 
 void parser::eval_expr7(long long& result) {
-	register char op;
+	char op;
 	op = 0;
 	if ((tok_type == DELIMITER) &&
 		*token == '!' || *token == '~' || *token == '+' || *token == '-') {
