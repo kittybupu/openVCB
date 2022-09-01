@@ -70,8 +70,8 @@ namespace openVCB {
 
 						for (int k = 0; k < 4; k++) {
 							ivec2 np = p + fourNeighbors[k];
-							if (np.x < 0 || np.x > width ||
-								np.y < 0 || np.y > height) continue;
+							if (np.x < 0 || np.x >= width ||
+								np.y < 0 || np.y >= height) continue;
 
 							int nidx = np.x + np.y * width;
 
