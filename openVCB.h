@@ -174,7 +174,7 @@ namespace openVCB {
 		void readFromVCB(std::string p);
 
 		// Decode base64 data from clipboard, then process logic data
-		void readFromBlueprint(std::string clipboardData);
+		bool readFromBlueprint(std::string clipboardData);
 
 		// Decompress zstd data to an image
 		bool processLogicData(std::vector<unsigned char> logicData, int headerSize);

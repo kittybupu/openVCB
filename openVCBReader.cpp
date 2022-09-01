@@ -194,17 +194,26 @@ namespace openVCB {
 		width = header[3];
 		height = header[1];
 		
+		if (imgDSize != width * height * 4) {
+			printf("error: header width x height does not match header length");
+			return 0;
+		}
+		
 		unsigned char* cc = &logicData[0];
 		size_t ccSize = logicData.size() - headerSize;
 
 		unsigned long long const imSize = ZSTD_getFrameContentSize(cc, ccSize);
-
+		
 		if (imSize == ZSTD_CONTENTSIZE_ERROR) {
 			printf("error: not compressed by zstd!");
 			return 0;
 		}
 		else if (imSize == ZSTD_CONTENTSIZE_UNKNOWN) {
 			printf("error: original size unknown!");
+			return 0;
+		}
+		else if (imSize != imgDSize) {
+			printf("error: decompressed image data size does not match header");
 			return 0;
 		}
 		else {
