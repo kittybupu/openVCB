@@ -21,6 +21,7 @@ namespace openVCB {
 
 	Project::~Project() {
 		if (originalImage) delete[] originalImage;
+		if (vmem) delete[] vmem;
 		if (image) delete[] image;
 		if (indexImage) delete[] indexImage;
 		if (writeMap.ptr) delete[] writeMap.ptr;
