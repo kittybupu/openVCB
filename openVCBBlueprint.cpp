@@ -35,8 +35,54 @@ namespace openVCB {
         return result;
     }
 
-    void Project::readFromBlueprint(std::string clipboardData) {
-        std::vector<unsigned char> logicData = b64decode(clipboardData);
-        Project::processLogicData(logicData, 32);
+    bool isBase64(std::string text) {
+        const size_t len = text.length();
+		
+		//must be multiple of 4
+        if (len % 4 != 0) { 
+            return false;
+        }
+		
+		//valid characters only
+        for (size_t i = 0; i < len; i ++) {
+            char ch = text[i];
+            if (!((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '/' || ch == '+' || (i >= len - 3 && ch == '='))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    std::string removeCharsFromString(std::string str, std::string charsToRemove) {
+        for (size_t i = 0; i < charsToRemove.length(); ++i) {
+            str.erase(remove(str.begin(), str.end(), charsToRemove[i]), str.end());
+        }
+
+        return str;
+    }
+
+    bool Project::readFromBlueprint(std::string clipboardData) {		
+
+        //remove whitespace
+        clipboardData = removeCharsFromString(clipboardData, " \t\r\n");
+
+        if (!isBase64(clipboardData)) {
+            return false;
+        }
+
+        std::vector<unsigned char> logicData = b64decode(clipboardData);		
+				
+		//check minimum size: zstd magic number [4] + vcb header [32]
+		if (logicData.size() <= 36) {
+			return false;
+		}
+
+        //check zstd magic number
+        if ((*(unsigned int*)&logicData[0]) != 0xFD2FB528) {
+            return false;
+        }
+		
+		return Project::processLogicData(logicData, 32);
     }
 }
