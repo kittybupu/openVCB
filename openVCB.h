@@ -137,7 +137,7 @@ namespace openVCB {
 
 	class Project {
 	public:
-		int* vmem; // null if vmem is not used
+		int* vmem = nullptr; // null if vmem is not used
 		size_t vmemSize = 0;
 		std::string assembly;
 		LatchInterface vmAddr;
@@ -151,18 +151,18 @@ namespace openVCB {
 
 		// An image containing component indices
 		unsigned char* originalImage;
-		Ink* image;
-		int* indexImage;
+		Ink* image = nullptr;
+		int* indexImage = nullptr;
 		int numGroups;
 
 		// Adjacentcy matrix
 		// By default, the indices from ink groups first and then component groups
-		SparseMat writeMap;
-		InkState* states;
+		SparseMat writeMap = {};
+		InkState* states = nullptr;
 
 		// Event queue
-		int* updateQ[2];
-		int16_t* lastActiveInputs;
+		int* updateQ[2]{ nullptr, nullptr };
+		int16_t* lastActiveInputs = nullptr;
 
 #ifdef OVCB_MT
 		std::atomic<int> qSize;
@@ -183,7 +183,7 @@ namespace openVCB {
 		std::pair<Ink, int> sample(glm::ivec2 pos);
 
 		// Assemble the vmem from this->assembly
-		void assembleVmem();
+		void assembleVmem(char* err = nullptr);
 
 		// Dump vmem contents to file
 		void dumpVMemToText(std::string p);

@@ -252,10 +252,14 @@ void parser::get_token() {
 }
 
 long long openVCB::evalExpr(const char* expr,
-	std::unordered_map<std::string, long long>& symbols) {
+	std::unordered_map<std::string, long long>& symbols,
+	char* err) {
+
 	parser p(symbols);
 	auto res = p.eval_expr((char*)expr);
-	if (*p.errormsg)
-		printf("error: \"%s\" %s\n", expr, p.errormsg);
+	if (*p.errormsg) {
+		if (err) strcpy_s(err, 256, p.errormsg);
+		else fprintf(stderr, "error: \"%s\" %s\n", expr, p.errormsg);
+	}
 	return res;
 }

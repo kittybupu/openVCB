@@ -39,7 +39,7 @@ namespace openVCB {
 		return string(buff + start, buff + end);
 	}
 
-	void Project::assembleVmem() {
+	void Project::assembleVmem(char* err) {
 		if (!vmem) return;
 		// printf("%s\n", assembly.c_str());
 
@@ -88,7 +88,7 @@ namespace openVCB {
 			if (prefix(buff, "symbol") || prefix(buff, "resymb")) {
 				int k = 6;
 				string label = getNext(buff, k);
-				auto val = evalExpr(buff + k, vars);
+				auto val = evalExpr(buff + k, vars, err);
 				vars[label] = val;
 			}
 			else if (prefix(buff, "unsymb")) {
@@ -101,7 +101,7 @@ namespace openVCB {
 				string label = getNext(buff, k);
 				string addr = getNext(buff, k);
 				auto addrVal = addr == "inline" ? loc++ : evalExpr(addr.c_str(), vars);
-				auto val = evalExpr(buff + k, vars);
+				auto val = evalExpr(buff + k, vars, err);
 
 				vars[label] = addrVal;
 				vmem[addrVal % vmemSize] = val;
@@ -110,11 +110,15 @@ namespace openVCB {
 			else if (prefix(buff, "bookmark")) {}
 			else if (prefix(buff, "sub_bookmark")) {}
 			else {
-				auto val = evalExpr(buff, vars);
+				auto val = evalExpr(buff, vars, err);
 
 				// printf("%s (0x%08x=0x%08x)\n", buff, loc, val);
 
 				vmem[(loc++) % vmemSize] = val;
+			}
+			if (loc >= vmemSize) {
+				if (err) strcpy_s(err, 256, "VMem exceeded.");
+				break;
 			}
 		}
 
