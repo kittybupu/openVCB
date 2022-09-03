@@ -150,7 +150,7 @@ namespace openVCB {
 		int width;
 
 		// An image containing component indices
-		unsigned char* originalImage;
+		unsigned char* originalImage = nullptr;
 		Ink* image = nullptr;
 		int* indexImage = nullptr;
 		int numGroups;
