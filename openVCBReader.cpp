@@ -35,6 +35,9 @@ namespace openVCB {
 		0x384d47,
 		0x323841,
 
+		0xa1ab8c,
+		0x3f4b5b,
+
 		// On
 		0x000000,
 
@@ -56,7 +59,10 @@ namespace openVCB {
 
 		0xff0041,
 		0x63ff9f,
-		0xffffff
+		0xffffff,
+
+		0xa1ab8c,
+		0x3f4b5b
 	};
 
 	const char* inkNames[] = {
@@ -82,6 +88,9 @@ namespace openVCB {
 		"Latch (Off)",
 		"LED (Off)",
 
+		"Filler",
+		"Annotation",
+
 		"UNDEFINED",
 
 		"Trace (On)",
@@ -103,6 +112,9 @@ namespace openVCB {
 		"Clock (On)",
 		"Latch (On)",
 		"LED (On)",
+
+		"UNDEFINED"
+		"UNDEFINED"
 	};
 
 	const char* getInkString(Ink ink) {
@@ -141,6 +153,14 @@ namespace openVCB {
 		case 0x8756a1:
 		case 0xa15597:
 			ink = Ink::TraceOff;
+			break;
+
+		case 0x3a4551:
+			ink = Ink::AnnotationOff;
+			break;
+
+		case 0x8caba1:
+			ink = Ink::FillerOff;
 			break;
 
 		default:

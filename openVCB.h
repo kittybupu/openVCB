@@ -58,6 +58,9 @@ namespace openVCB {
 		LatchOff,
 		LedOff,
 
+		FillerOff,
+		AnnotationOff,
+
 		numTypes,
 
 		Trace = 129,
@@ -77,7 +80,10 @@ namespace openVCB {
 
 		Clock,
 		Latch,
-		Led
+		Led,
+
+		Filler,
+		Annotation
 	};
 
 	extern const int colorPallet[];
