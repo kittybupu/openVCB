@@ -58,6 +58,7 @@ namespace openVCB {
 			// Parse this stuff
 			if (prefix(buff, "symbol") || prefix(buff, "resymb")) {}
 			else if (prefix(buff, "unsymb")) {}
+			else if (prefix(buff, "unpoint")) {}
 			else if (prefix(buff, "pointer") || prefix(buff, "repoint")) {
 				int k = 7;
 				string label = getNext(buff, k);
@@ -105,6 +106,11 @@ namespace openVCB {
 
 				vars[label] = addrVal;
 				vmem[addrVal % vmemSize] = val;
+			}
+			else if (prefix(buff, "unpoint")) {
+				int k = 7;
+				string label = getNext(buff, k);
+				vars.erase(label);
 			}
 			else if (buff[0] == '@') {}
 			else if (prefix(buff, "bookmark")) {}

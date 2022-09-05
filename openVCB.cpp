@@ -24,6 +24,9 @@ namespace openVCB {
 		if (vmem) delete[] vmem;
 		if (image) delete[] image;
 		if (indexImage) delete[] indexImage;
+		if (decoration[0]) delete[] decoration[0];
+		if (decoration[1]) delete[] decoration[1];
+		if (decoration[2]) delete[] decoration[2];
 		if (writeMap.ptr) delete[] writeMap.ptr;
 		if (writeMap.rows) delete[] writeMap.rows;
 		if (states) delete[] states;

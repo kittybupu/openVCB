@@ -58,6 +58,9 @@ namespace openVCB {
 		LatchOff,
 		LedOff,
 
+		FillerOff,
+		AnnotationOff,
+
 		numTypes,
 
 		Trace = 129,
@@ -77,7 +80,10 @@ namespace openVCB {
 
 		Clock,
 		Latch,
-		Led
+		Led,
+
+		Filler,
+		Annotation
 	};
 
 	extern const int colorPallet[];
@@ -153,6 +159,7 @@ namespace openVCB {
 		unsigned char* originalImage = nullptr;
 		Ink* image = nullptr;
 		int* indexImage = nullptr;
+		int* decoration[3]{ nullptr, nullptr, nullptr };
 		int numGroups;
 
 		// Adjacentcy matrix
@@ -176,8 +183,11 @@ namespace openVCB {
 		// Decode base64 data from clipboard, then process logic data
 		bool readFromBlueprint(std::string clipboardData);
 
-		// Decompress zstd data to an image
+		// Decompress zstd logic data to an image
 		bool processLogicData(std::vector<unsigned char> logicData, int headerSize);
+
+		// Decompress zstd decoration data to an image
+		void processDecorationData(std::vector<unsigned char> decorationData, int*& originalImage);
 
 		// Samples the ink at a pixel. Returns ink and group id
 		std::pair<Ink, int> sample(glm::ivec2 pos);
