@@ -58,16 +58,17 @@ namespace openVCB {
 		LatchOff,
 		LedOff,
 
-		FillerOff,
-		AnnotationOff,
+		Filler,
+		Annotation,
 
 		numTypes,
 
 		Trace = 129,
 		Read,
 		Write,
+		InvalidCross,
 
-		Buffer = 133,
+		Buffer,
 		Or,
 		Nand,
 
@@ -82,8 +83,8 @@ namespace openVCB {
 		Latch,
 		Led,
 
-		Filler,
-		Annotation
+		InvalidFiller,
+		InvalidAnnotation
 	};
 
 	extern const int colorPallet[];

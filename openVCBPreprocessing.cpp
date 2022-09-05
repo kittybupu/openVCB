@@ -43,7 +43,8 @@ namespace openVCB {
 				if (!visited[x + y * width]) {
 					// Check what ink this group is of
 					Ink ink = image[x + y * width];
-					if (ink == Ink::Cross || ink == Ink::None)
+					if (ink == Ink::Cross || ink == Ink::None ||
+						ink == Ink::Annotation || ink == Ink::Filler)
 						continue;
 					else if (ink == Ink::ReadOff) {
 						readInks.push_back(ivec2(x, y));

@@ -113,7 +113,7 @@ namespace openVCB {
 		"Latch (On)",
 		"LED (On)",
 
-		"UNDEFINED"
+		"UNDEFINED", 
 		"UNDEFINED"
 	};
 
@@ -156,11 +156,11 @@ namespace openVCB {
 			break;
 
 		case 0x3a4551:
-			ink = Ink::AnnotationOff;
+			ink = Ink::Annotation;
 			break;
 
 		case 0x8caba1:
-			ink = Ink::FillerOff;
+			ink = Ink::Filler;
 			break;
 
 		default:
