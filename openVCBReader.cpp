@@ -207,7 +207,7 @@ namespace openVCB {
 		return data.substr(begin, end - begin);
 	}
 
-	bool Project::processLogicData(std::vector<unsigned char> logicData, int headerSize) {
+	bool processData(std::vector<unsigned char> logicData, int headerSize, int& width, int& height, unsigned char*& originalImage, unsigned long long& imSize) {
 		int* header = (int*)&logicData[logicData.size() - headerSize];
 
 		const int imgDSize = header[5];
@@ -222,7 +222,7 @@ namespace openVCB {
 		unsigned char* cc = &logicData[0];
 		size_t ccSize = logicData.size() - headerSize;
 
-		unsigned long long const imSize = ZSTD_getFrameContentSize(cc, ccSize);
+		imSize = ZSTD_getFrameContentSize(cc, ccSize);
 		
 		if (imSize == ZSTD_CONTENTSIZE_ERROR) {
 			printf("error: not compressed by zstd!");
@@ -238,13 +238,32 @@ namespace openVCB {
 		}
 		else {
 			originalImage = new unsigned char[imSize];
-			image = new Ink[imSize];
 			size_t const dSize = ZSTD_decompress(originalImage, imSize, cc, ccSize);
+			return 1;
+		}
+	}
 
+	bool Project::processLogicData(std::vector<unsigned char> logicData, int headerSize) {
+		unsigned long long imSize;
+		if (processData(logicData, headerSize, width, height, originalImage, imSize)) {
+			image = new Ink[imSize];
 #pragma omp parallel for schedule(static, 8196)
 			for (int i = 0; i < imSize / 4; i++)
 				image[i] = color2ink(((int*)originalImage)[i]);
+
 			return 1;
+		}
+
+		return 0;
+	}
+
+	void Project::Project::processDecorationData(std::vector<unsigned char> decorationData, int*& originalImage) {
+		unsigned long long imSize;
+		int width, height;
+		if (processData(decorationData, 24, width, height, (unsigned char*&)originalImage, imSize)) {
+			for (int i = 0; i < imSize / 4; i++) {
+				originalImage[i] = col2int(originalImage[i]);
+			}
 		}
 	}
 
@@ -279,6 +298,34 @@ namespace openVCB {
 			std::string val;
 			while (std::getline(s, val, ','))
 				logicData.push_back(atoi(val.c_str() + 1));
+		}
+
+		std::vector<unsigned char>* decorationData = new std::vector<unsigned char>[3];
+		{
+			pos--;
+			auto dat = split(godotObj, " ), PoolByteArray( ", pos);
+			std::stringstream s(dat);
+			std::string val;
+			while (std::getline(s, val, ','))
+				decorationData[0].push_back(atoi(val.c_str() + 1));			
+		}
+
+		{
+			pos--;
+			auto dat = split(godotObj, " ), PoolByteArray( ", pos);
+			std::stringstream s(dat);
+			std::string val;
+			while (std::getline(s, val, ','))
+				decorationData[1].push_back(atoi(val.c_str() + 1));
+		}
+
+		{
+			pos--;
+			auto dat = split(godotObj, " ) ]", pos);
+			std::stringstream s(dat);
+			std::string val;
+			while (std::getline(s, val, ','))
+				decorationData[2].push_back(atoi(val.c_str() + 1));
 		}
 
 		split(godotObj, "\"vmem_settings\": [ ", pos);
@@ -352,5 +399,9 @@ namespace openVCB {
 
 			// printf("Loaded image %dx%d (%d bytes)\n", width, height, dSize);
 		}
+
+		Project::processDecorationData(decorationData[0], decoration[0]);
+		Project::processDecorationData(decorationData[1], decoration[1]);
+		Project::processDecorationData(decorationData[2], decoration[2]);
 	}
 }
