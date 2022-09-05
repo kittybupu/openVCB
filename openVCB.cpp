@@ -22,9 +22,6 @@ namespace openVCB {
 	Project::~Project() {
 		if (originalImage) delete[] originalImage;
 		if (vmem) delete[] vmem;
-		if (decoration[0]) delete[] decoration[0];
-		if (decoration[1]) delete[] decoration[1];
-		if (decoration[2]) delete[] decoration[2];
 		if (image) delete[] image;
 		if (indexImage) delete[] indexImage;
 		if (decoration[0]) delete[] decoration[0];
