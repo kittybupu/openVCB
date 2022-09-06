@@ -261,8 +261,17 @@ namespace openVCB {
 		unsigned long long imSize;
 		int width, height;
 		if (processData(decorationData, 24, width, height, (unsigned char*&)originalImage, imSize)) {
+			bool used = false;
 			for (int i = 0; i < imSize / 4; i++) {
-				originalImage[i] = col2int(originalImage[i]);
+				int color = originalImage[i];
+				originalImage[i] = col2int(color);
+				used |= color != 0;
+			}
+
+			//if decoration is not used, make it explicit for simulator
+			if (!used) {
+				delete[] originalImage;
+				originalImage = NULL;
 			}
 		}
 	}
