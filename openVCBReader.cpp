@@ -328,6 +328,23 @@ namespace openVCB {
 				decorationData[2].push_back(atoi(val.c_str() + 1));
 		}
 
+		//led palette
+		std::vector<int> vecPalette;
+		split(godotObj, "\"led_palette\": [ ", pos);
+
+		auto dat = split(godotObj, " ]", pos);
+		std::stringstream s(dat);
+		std::string val;		
+		while (std::getline(s, val, ',')) {
+			//remove quotes
+			val.erase(remove(val.begin(), val.end(), '\"'), val.end());
+			vecPalette.push_back(std::stoul(val, nullptr, 16));
+		}
+
+		ledPaletteCount = vecPalette.size();
+		ledPalette = new int[ledPaletteCount];
+		std::copy(vecPalette.begin(), vecPalette.end(), ledPalette);
+
 		split(godotObj, "\"vmem_settings\": [ ", pos);
 
 		// Get VMem settings

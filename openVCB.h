@@ -161,6 +161,8 @@ namespace openVCB {
 		Ink* image = nullptr;
 		int* indexImage = nullptr;
 		int* decoration[3]{ nullptr, nullptr, nullptr };
+		size_t ledPaletteCount;
+		int* ledPalette;
 		int numGroups;
 
 		// Adjacentcy matrix
