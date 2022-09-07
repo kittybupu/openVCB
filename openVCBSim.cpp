@@ -30,6 +30,10 @@ namespace openVCB {
 							updateQ[0][qSize++] = vmData.gids[k];
 						}
 					}
+
+					// Force ignore further address updates
+					for (int k = 0; k < vmAddr.numBits; k++)
+						states[vmAddr.gids[k]].activeInputs = 0;
 				}
 				else {
 					// Write address
