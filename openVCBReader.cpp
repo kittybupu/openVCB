@@ -113,7 +113,7 @@ namespace openVCB {
 		"Latch (On)",
 		"LED (On)",
 
-		"UNDEFINED", 
+		"UNDEFINED",
 		"UNDEFINED"
 	};
 
@@ -213,17 +213,17 @@ namespace openVCB {
 		const int imgDSize = header[5];
 		width = header[3];
 		height = header[1];
-		
+
 		if (imgDSize != width * height * 4) {
 			printf("error: header width x height does not match header length");
 			return 0;
 		}
-		
+
 		unsigned char* cc = &logicData[0];
 		size_t ccSize = logicData.size() - headerSize;
 
 		imSize = ZSTD_getFrameContentSize(cc, ccSize);
-		
+
 		if (imSize == ZSTD_CONTENTSIZE_ERROR) {
 			printf("error: not compressed by zstd!");
 			return 0;
@@ -257,21 +257,21 @@ namespace openVCB {
 		return 0;
 	}
 
-	void Project::Project::processDecorationData(std::vector<unsigned char> decorationData, int*& originalImage) {
+	void Project::Project::processDecorationData(std::vector<unsigned char> decorationData, int*& decoData) {
 		unsigned long long imSize;
 		int width, height;
-		if (processData(decorationData, 24, width, height, (unsigned char*&)originalImage, imSize)) {
+		if (processData(decorationData, 24, width, height, (unsigned char*&)decoData, imSize)) {
 			bool used = false;
 			for (int i = 0; i < imSize / 4; i++) {
-				int color = originalImage[i];
-				originalImage[i] = col2int(color);
+				int color = decoData[i];
+				decoData[i] = col2int(color);
 				used |= color != 0;
 			}
 
 			//if decoration is not used, make it explicit for simulator
 			if (!used) {
-				delete[] originalImage;
-				originalImage = NULL;
+				delete[] decoData;
+				decoData = NULL;
 			}
 		}
 	}
@@ -316,7 +316,7 @@ namespace openVCB {
 			std::stringstream s(dat);
 			std::string val;
 			while (std::getline(s, val, ','))
-				decorationData[0].push_back(atoi(val.c_str() + 1));			
+				decorationData[0].push_back(atoi(val.c_str() + 1));
 		}
 
 		{
@@ -343,7 +343,7 @@ namespace openVCB {
 
 		auto dat = split(godotObj, " ]", pos);
 		std::stringstream s(dat);
-		std::string val;		
+		std::string val;
 		while (std::getline(s, val, ',')) {
 			//remove quotes
 			val.erase(remove(val.begin(), val.end(), '\"'), val.end());
