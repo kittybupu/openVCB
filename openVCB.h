@@ -143,6 +143,18 @@ namespace openVCB {
 		int* rows;
 	};
 
+	// This represents a pixel with meta data as well as simulation ink type
+	// Ths is for inks that have variants which do not affect simulation
+	// i.e. Colored traces. 
+	struct InkPixel {
+		int16_t ink;
+		int16_t meta;
+
+		Ink getInk() {
+			return (Ink)ink;
+		}
+	};
+
 	class Project {
 	public:
 		int* vmem = nullptr; // null if vmem is not used
@@ -159,7 +171,7 @@ namespace openVCB {
 
 		// An image containing component indices
 		unsigned char* originalImage = nullptr;
-		Ink* image = nullptr;
+		InkPixel* image = nullptr;
 		int* indexImage = nullptr;
 		int* decoration[3]{ nullptr, nullptr, nullptr };
 		size_t ledPaletteCount;

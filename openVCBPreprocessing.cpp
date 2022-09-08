@@ -42,7 +42,7 @@ namespace openVCB {
 			for (int x = 0; x < width; x++)
 				if (!visited[x + y * width]) {
 					// Check what ink this group is of
-					Ink ink = image[x + y * width];
+					Ink ink = image[x + y * width].getInk();
 					if (ink == Ink::Cross || ink == Ink::None ||
 						ink == Ink::Annotation || ink == Ink::Filler)
 						continue;
@@ -80,7 +80,7 @@ namespace openVCB {
 							if (visited[nidx]) continue;
 
 							// Check ink type and handle crosses
-							Ink newInk = image[nidx];
+							Ink newInk = image[nidx].getInk();
 							if (newInk == Ink::Cross) {
 								np += fourNeighbors[k];
 								if (np.x < 0 || np.x > width ||
@@ -88,7 +88,7 @@ namespace openVCB {
 
 								nidx = np.x + np.y * width;
 								if (visited[nidx]) continue;
-								newInk = image[np.x + np.y * width];
+								newInk = image[np.x + np.y * width].getInk();
 							}
 
 							// Push back if Allowable

@@ -246,10 +246,13 @@ namespace openVCB {
 	bool Project::processLogicData(std::vector<unsigned char> logicData, int headerSize) {
 		unsigned long long imSize;
 		if (processData(logicData, headerSize, width, height, originalImage, imSize)) {
-			image = new Ink[imSize];
+			image = new InkPixel[imSize];
 #pragma omp parallel for schedule(static, 8196)
-			for (int i = 0; i < imSize / 4; i++)
-				image[i] = color2ink(((int*)originalImage)[i]);
+			for (int i = 0; i < imSize / 4; i++) {
+				InkPixel pix{};
+				pix.ink = (int16_t)color2ink(((int*)originalImage)[i]);
+				image[i] = pix;
+			}
 
 			return 1;
 		}
@@ -404,7 +407,7 @@ namespace openVCB {
 							if (pos.x < 0 || pos.x >= width ||
 								pos.y < 0 || pos.y >= height)
 								continue;
-							image[pos.x + pos.y * width] = Ink::LatchOff;
+							image[pos.x + pos.y * width].ink = (int16_t)Ink::LatchOff;
 						}
 					}
 				}
@@ -417,7 +420,7 @@ namespace openVCB {
 							if (pos.x < 0 || pos.x >= width ||
 								pos.y < 0 || pos.y >= height)
 								continue;
-							image[pos.x + pos.y * width] = Ink::LatchOff;
+							image[pos.x + pos.y * width].ink = (int16_t)Ink::LatchOff;
 						}
 					}
 				}

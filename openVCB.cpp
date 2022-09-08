@@ -42,7 +42,7 @@ namespace openVCB {
 			return { Ink::None, -1 };
 
 		int idx = pos.x + pos.y * width;
-		Ink type = image[idx];
+		Ink type = image[idx].getInk();
 		idx = indexImage[idx];
 		if (type == Ink::Cross) return { Ink::Cross, idx };
 
