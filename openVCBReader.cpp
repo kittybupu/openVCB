@@ -131,36 +131,42 @@ namespace openVCB {
 		return (r >> 16) | g | (b << 16);
 	}
 
-	Ink color2ink(int col) {
+	int traceColors[] = {
+			0x2a3541,
+			0x9fa8ae,
+			0xa1555e,
+			0xa16c56,
+			0xa18556,
+			0xa19856,
+			0x99a156,
+			0x88a156,
+			0x6ca156,
+			0x56a18d,
+			0x5693a1,
+			0x567ba1,
+			0x5662a1,
+			0x6656a1,
+			0x8756a1,
+			0xa15597
+	};
+
+	InkPixel color2ink(int col) {
 		col = col2int(col);
-		Ink ink = Ink::None;
+		InkPixel pix = {};
+		for (int i = 0; i < 16; i++)
+			if (col == traceColors[i]) {
+				pix.meta = (int16_t)i;
+				pix.ink = (int16_t)Ink::Trace;
+				break;
+			}
 
 		switch (col) {
-		case 0x2a3541:
-		case 0x9fa8ae:
-		case 0xa1555e:
-		case 0xa16c56:
-		case 0xa18556:
-		case 0xa19856:
-		case 0x99a156:
-		case 0x88a156:
-		case 0x6ca156:
-		case 0x56a18d:
-		case 0x5693a1:
-		case 0x567ba1:
-		case 0x5662a1:
-		case 0x6656a1:
-		case 0x8756a1:
-		case 0xa15597:
-			ink = Ink::TraceOff;
-			break;
-
 		case 0x3a4551:
-			ink = Ink::Annotation;
+			pix.ink = (int16_t)Ink::Annotation;
 			break;
 
 		case 0x8caba1:
-			ink = Ink::Filler;
+			pix.ink = (int16_t)Ink::Filler;
 			break;
 
 		default:
@@ -168,12 +174,12 @@ namespace openVCB {
 				if (colorPallet[i] == col) {
 					if (i >= (int)Ink::numTypes)
 						i += 128 - (int)Ink::numTypes;
-					ink = (Ink)i;
+					pix.ink = (int16_t)i;
 					break;
 				}
 		}
 
-		switch (ink) {
+		switch ((Ink)pix.ink) {
 		case Ink::Trace:
 		case Ink::Read:
 		case Ink::Write:
@@ -187,10 +193,10 @@ namespace openVCB {
 		case Ink::Xnor:
 		case Ink::Clock:
 		case Ink::Led:
-			ink = setOff(ink);
+			pix.ink = (int16_t)setOff((Ink)pix.ink);
 		}
 
-		return ink;
+		return pix;
 	}
 
 	std::string split(std::string data, const char* t, int& start) {
@@ -248,11 +254,8 @@ namespace openVCB {
 		if (processData(logicData, headerSize, width, height, originalImage, imSize)) {
 			image = new InkPixel[imSize];
 #pragma omp parallel for schedule(static, 8196)
-			for (int i = 0; i < imSize / 4; i++) {
-				InkPixel pix{};
-				pix.ink = (int16_t)color2ink(((int*)originalImage)[i]);
-				image[i] = pix;
-			}
+			for (int i = 0; i < imSize / 4; i++)
+				image[i] = color2ink(((int*)originalImage)[i]);
 
 			return 1;
 		}
