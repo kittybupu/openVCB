@@ -7,6 +7,7 @@
 #include <glm/glm.hpp>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 // Enable multithreading
 // #define OVCB_MT
@@ -169,6 +170,9 @@ namespace openVCB {
 		// By default, the indices from ink groups first and then component groups
 		SparseMat writeMap = {};
 		InkState* states = nullptr;
+
+		// Map of symbols during assembleVmem()
+		std::unordered_map<std::string, long long> assemblySymbols;
 
 		// Event queue
 		int* updateQ[2]{ nullptr, nullptr };

@@ -258,7 +258,8 @@ long long openVCB::evalExpr(const char* expr,
 	parser p(symbols);
 	auto res = p.eval_expr((char*)expr);
 	if (*p.errormsg) {
-		if (err) strcpy_s(err, 256, p.errormsg);
+		if (err)
+			sprintf_s(err, 256, "%s at %s", p.errormsg, expr);
 		else fprintf(stderr, "error: \"%s\" %s\n", expr, p.errormsg);
 	}
 	return res;

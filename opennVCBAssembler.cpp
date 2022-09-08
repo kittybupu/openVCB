@@ -43,9 +43,8 @@ namespace openVCB {
 		if (!vmem) return;
 		// printf("%s\n", assembly.c_str());
 
-		unordered_map<string, long long> vars;
-
 		// Scan through everything once to obtain values for labels
+		assemblySymbols.clear();
 		int loc = 1;
 		int lineLoc = 0;
 		while (lineLoc != assembly.size()) {
@@ -68,7 +67,7 @@ namespace openVCB {
 			else if (buff[0] == '@') {
 				int k = 1;
 				string label = getNext(buff, k);
-				vars[label] = loc;
+				assemblySymbols[label] = loc;
 			}
 			else if (prefix(buff, "bookmark")) {}
 			else if (prefix(buff, "sub_bookmark")) {}
@@ -89,34 +88,34 @@ namespace openVCB {
 			if (prefix(buff, "symbol") || prefix(buff, "resymb")) {
 				int k = 6;
 				string label = getNext(buff, k);
-				auto val = evalExpr(buff + k, vars, err);
-				vars[label] = val;
+				auto val = evalExpr(buff + k, assemblySymbols, err);
+				assemblySymbols[label] = val;
 			}
 			else if (prefix(buff, "unsymb")) {
 				int k = 6;
 				string label = getNext(buff, k);
-				vars.erase(label);
+				assemblySymbols.erase(label);
 			}
 			else if (prefix(buff, "pointer") || prefix(buff, "repoint")) {
 				int k = 7;
 				string label = getNext(buff, k);
 				string addr = getNext(buff, k);
-				auto addrVal = addr == "inline" ? loc++ : evalExpr(addr.c_str(), vars);
-				auto val = evalExpr(buff + k, vars, err);
+				auto addrVal = addr == "inline" ? loc++ : evalExpr(addr.c_str(), assemblySymbols, err);
+				auto val = evalExpr(buff + k, assemblySymbols, err);
 
-				vars[label] = addrVal;
+				assemblySymbols[label] = addrVal;
 				vmem[addrVal % vmemSize] = val;
 			}
 			else if (prefix(buff, "unpoint")) {
 				int k = 7;
 				string label = getNext(buff, k);
-				vars.erase(label);
+				assemblySymbols.erase(label);
 			}
 			else if (buff[0] == '@') {}
 			else if (prefix(buff, "bookmark")) {}
 			else if (prefix(buff, "sub_bookmark")) {}
 			else {
-				auto val = evalExpr(buff, vars, err);
+				auto val = evalExpr(buff, assemblySymbols, err);
 
 				// printf("%s (0x%08x=0x%08x)\n", buff, loc, val);
 
