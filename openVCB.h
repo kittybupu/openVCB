@@ -226,10 +226,10 @@ namespace openVCB {
 		void toggleLatch(glm::ivec2 pos);
 
 		// Preprocesses the image into the simulation format
-		virtual void preprocess(bool useGorder = false);
+		void preprocess(bool useGorder = false);
 
 		// Advances the simulation by n ticks
-		virtual void tick(int numTicks = 1);
+		void tick(int numTicks = 1);
 
 		// Emits an event if it is not yet in the queue
 		inline bool tryEmit(int gid) {
