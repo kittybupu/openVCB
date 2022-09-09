@@ -6,8 +6,10 @@ namespace openVCB {
 	using namespace std;
 	using namespace glm;
 
-	void Project::tick(int numTicks) {
+	int Project::tick(int numTicks, long long maxEvents) {
+		long long events = 0;
 		for (size_t i = 0; i < numTicks; i++) {
+			if (events > maxEvents) return i;
 			// VMem integration
 			if (vmem) {
 				// Get current address
@@ -47,6 +49,7 @@ namespace openVCB {
 			for (int traceUpdate = 0; traceUpdate < 2; traceUpdate++) { // We update twice per tick
 				// Remember stuff
 				const int numEvents = qSize;
+				events += numEvents;
 				qSize = 0;
 
 				// Copy over the current number of active inputs
@@ -152,5 +155,6 @@ namespace openVCB {
 				std::swap(updateQ[0], updateQ[1]);
 			}
 		}
+		return numTicks;
 	}
 }

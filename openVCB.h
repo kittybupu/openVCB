@@ -229,7 +229,7 @@ namespace openVCB {
 		void preprocess(bool useGorder = false);
 
 		// Advances the simulation by n ticks
-		void tick(int numTicks = 1);
+		int tick(int numTicks = 1, long long maxEvents = 0x7fffffffffffffffll);
 
 		// Emits an event if it is not yet in the queue
 		inline bool tryEmit(int gid) {
