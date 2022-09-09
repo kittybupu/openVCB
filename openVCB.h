@@ -58,6 +58,7 @@ namespace openVCB {
 		ClockOff,
 		LatchOff,
 		LedOff,
+		BundleOff,
 
 		Filler,
 		Annotation,
@@ -83,6 +84,7 @@ namespace openVCB {
 		Clock,
 		Latch,
 		Led,
+		Bundle,
 
 		InvalidFiller,
 		InvalidAnnotation

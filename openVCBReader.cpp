@@ -34,6 +34,7 @@ namespace openVCB {
 		0x4d243c,
 		0x384d47,
 		0x323841,
+		0x6c9799,
 
 		0xa1ab8c,
 		0x3f4b5b,
@@ -60,6 +61,7 @@ namespace openVCB {
 		0xff0041,
 		0x63ff9f,
 		0xffffff,
+		0xb2fbfe,
 
 		0xa1ab8c,
 		0x3f4b5b
@@ -87,6 +89,7 @@ namespace openVCB {
 		"Clock (Off)",
 		"Latch (Off)",
 		"LED (Off)",
+		"Bundle (Off)",
 
 		"Filler",
 		"Annotation",
@@ -112,6 +115,7 @@ namespace openVCB {
 		"Clock (On)",
 		"Latch (On)",
 		"LED (On)",
+		"Bundle (On)",
 
 		"UNDEFINED",
 		"UNDEFINED"
@@ -177,23 +181,6 @@ namespace openVCB {
 					pix.ink = (int16_t)i;
 					break;
 				}
-		}
-
-		switch ((Ink)pix.ink) {
-		case Ink::Trace:
-		case Ink::Read:
-		case Ink::Write:
-		case Ink::Buffer:
-		case Ink::Or:
-		case Ink::And:
-		case Ink::Xor:
-		case Ink::Not:
-		case Ink::Nor:
-		case Ink::Nand:
-		case Ink::Xnor:
-		case Ink::Clock:
-		case Ink::Led:
-			pix.ink = (int16_t)setOff((Ink)pix.ink);
 		}
 
 		return pix;

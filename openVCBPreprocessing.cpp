@@ -3,6 +3,7 @@
 #include "openVCB.h"
 #include <unordered_set>
 #include <algorithm>
+#include <unordered_map>
 
 
 #include "gorder/Graph.h"
@@ -12,18 +13,108 @@ namespace openVCB {
 	using namespace std;
 	using namespace glm;
 
+	const ivec2 fourNeighbors[4]{
+		ivec2(-1, 0),
+		ivec2(0, 1),
+		ivec2(1, 0),
+		ivec2(0, -1)
+	};
+
+	void exploreBundle(ivec2 pos, int mask, InkPixel* image, int width, int height,
+		std::vector<int>& visited,
+		std::vector<ivec2>& stack, std::vector<ivec2>& bundleStack,
+		std::vector<ivec2>& readInks, std::vector<ivec2>& writeInks) {
+
+		bundleStack.push_back(pos);
+		while (bundleStack.size()) {
+			const ivec2 p = bundleStack.back();
+			bundleStack.pop_back();
+
+			const int bidx = p.x + p.y * width;
+			visited[bidx] |= mask;
+
+			// Check four directions
+			for (int k = 0; k < 4; k++) {
+				ivec2 np = p + fourNeighbors[k];
+				if (np.x < 0 || np.x >= width ||
+					np.y < 0 || np.y >= height) continue;
+
+				int nidx = np.x + np.y * width;
+				const int nvis = visited[nidx];
+				// Check if already visited
+				if (nvis & mask) continue;
+
+				InkPixel newPix = image[nidx];
+				Ink newInk = newPix.getInk();
+
+				// Handle different inks
+				if (newInk == Ink::ReadOff) {
+					if (nvis & 1) continue;
+					readInks.push_back(np);
+					if ((mask >> 16) == 2)
+						stack.push_back(np);
+					continue;
+				}
+				else if (newInk == Ink::WriteOff) {
+					if (nvis & 1) continue;
+					writeInks.push_back(np);
+					if ((mask >> 17) == 2)
+						stack.push_back(np);
+					continue;
+				}
+				else if (newInk == Ink::TraceOff) {
+					if (nvis & 1) continue;
+					// We will only connect to traces of the matching color
+					if ((mask >> newPix.meta) == 2)
+						stack.push_back(np);
+					continue;
+				}
+				else if (newInk == Ink::Cross) {
+					np += fourNeighbors[k];
+					if (np.x < 0 || np.x > width ||
+						np.y < 0 || np.y > height) continue;
+
+					nidx = np.x + np.y * width;
+					if (visited[nidx] & mask) continue;
+					newInk = image[np.x + np.y * width].getInk();
+				}
+
+				if (newInk == Ink::BundleOff)
+					bundleStack.push_back(np);
+			}
+		}
+	}
+
 	void Project::preprocess(bool useGorder) {
-		std::vector<bool> visited(width * height, false);
+		// Turn off any inks that start as off
+#pragma omp parallel for schedule(static, 8192)
+		for (size_t i = 0; i < width * height; i++) {
+			Ink ink = (Ink)image[i].ink;
+			switch (ink) {
+			case Ink::Trace:
+			case Ink::Read:
+			case Ink::Write:
+			case Ink::Buffer:
+			case Ink::Or:
+			case Ink::And:
+			case Ink::Xor:
+			case Ink::Not:
+			case Ink::Nor:
+			case Ink::Nand:
+			case Ink::Xnor:
+			case Ink::Clock:
+			case Ink::Led:
+			case Ink::Bundle:
+				ink = setOff(ink);
+				image[i].ink = (int16_t)ink;
+			}
+		}
+
+		std::vector<int> visited(width * height, 0);
 		std::vector<ivec2> stack;
+		std::vector<ivec2> bundleStack;
 		std::vector<ivec2> readInks;
 		std::vector<ivec2> writeInks;
-
-		const ivec2 fourNeighbors[4]{
-			ivec2(-1, 0),
-			ivec2(0, 1),
-			ivec2(1, 0),
-			ivec2(0, -1)
-		};
 
 		// Split up the ordering by ink vs. comp. 
 		// Hopefully groups things better in memory
@@ -37,10 +128,13 @@ namespace openVCB {
 		// This translates from morton ordering to sequential ordering
 		vector<Group> indexDict;
 
+		unordered_multimap<int, int> bundleCons;
+		unordered_set<long long> bundleConsSet;
+
 		// Connected Components Search
 		for (int y = 0; y < height; y++)
 			for (int x = 0; x < width; x++)
-				if (!visited[x + y * width]) {
+				if (!(visited[x + y * width] & 1)) {
 					// Check what ink this group is of
 					Ink ink = image[x + y * width].getInk();
 					if (ink == Ink::Cross || ink == Ink::None ||
@@ -66,7 +160,7 @@ namespace openVCB {
 						stack.pop_back();
 
 						const int idx = p.x + p.y * width;
-						visited[idx] = true;
+						visited[idx] |= 1;
 						indexImage[idx] = gid;
 
 						for (int k = 0; k < 4; k++) {
@@ -75,33 +169,71 @@ namespace openVCB {
 								np.y < 0 || np.y >= height) continue;
 
 							int nidx = np.x + np.y * width;
+							const int nvis = visited[nidx];
+
+							// Handle wire bundles
+							Ink newInk = image[nidx].getInk();
+							if (ink == Ink::TraceOff && newInk == Ink::BundleOff) {
+								// Whoo wire bundles
+								// What kind of ink are we again? 
+								InkPixel npix = image[idx];
+								int mask;
+
+								if (npix.ink == (int16_t)Ink::ReadOff)
+									mask = 2 << 16;
+								else if (npix.ink == (int16_t)Ink::WriteOff)
+									mask = 2 << 17;
+								else
+									mask = 2 << npix.meta;
+
+								if (nvis & mask) continue;
+
+								// Hold my beer, we're jumping in.
+								exploreBundle(np, mask, image, width, height, visited, stack, bundleStack, readInks, writeInks);
+
+								if (nvis & 1) {
+									// Try to insert new connection
+									int otherIdx = indexImage[nidx];
+									if (bundleConsSet.insert(((long long)otherIdx << 32) | gid).second)
+										bundleCons.insert({ gid, otherIdx });
+								}
+
+								continue;
+							}
 
 							// Check if already visited
-							if (visited[nidx]) continue;
+							if (nvis & 1) {
+								if (ink == Ink::BundleOff && (newInk == Ink::TraceOff || newInk == Ink::ReadOff || newInk == Ink::WriteOff)) {
+									// Try to insert new connection
+									int otherIdx = indexImage[nidx];
+									if (bundleConsSet.insert(((long long)gid << 32) | otherIdx).second)
+										bundleCons.insert({ otherIdx, gid });
+								}
+								continue;
+							}
 
 							// Check ink type and handle crosses
-							Ink newInk = image[nidx].getInk();
 							if (newInk == Ink::Cross) {
 								np += fourNeighbors[k];
 								if (np.x < 0 || np.x > width ||
 									np.y < 0 || np.y > height) continue;
 
 								nidx = np.x + np.y * width;
-								if (visited[nidx]) continue;
+								if (visited[nidx] & 1) continue;
 								newInk = image[np.x + np.y * width].getInk();
 							}
 
 							// Push back if Allowable
 							if (newInk == Ink::ReadOff && ink == Ink::TraceOff) {
-								readInks.push_back(ivec2(np.x, np.y));
-								stack.push_back(ivec2(np.x, np.y));
+								readInks.push_back(np);
+								stack.push_back(np);
 							}
 							else if (newInk == Ink::WriteOff && ink == Ink::TraceOff) {
-								writeInks.push_back(ivec2(np.x, np.y));
-								stack.push_back(ivec2(np.x, np.y));
+								writeInks.push_back(np);
+								stack.push_back(np);
 							}
 							else if (newInk == ink)
-								stack.push_back(ivec2(np.x, np.y));
+								stack.push_back(np);
 						}
 					}
 
@@ -111,7 +243,7 @@ namespace openVCB {
 		numGroups = writeMap.n;
 
 		// Sort groups by ink vs. component then by morton code.
-		sort(indexDict.begin(), indexDict.end(),
+		std::sort(indexDict.begin(), indexDict.end(),
 			[](const Group& a, const Group& b) -> bool {
 				if (std::get<1>(a) == std::get<1>(b))
 					return std::get<0>(a) < std::get<0>(b);
@@ -127,6 +259,8 @@ namespace openVCB {
 			auto g = indexDict[i];
 			InkState& s = states[i];
 			s.ink = (unsigned char)std::get<1>(g);
+			if (s.ink == (unsigned char)Ink::BundleOff)
+				s.ink = (unsigned char)Ink::TraceOff;
 			s.visited = 0;
 			s.activeInputs = 0;
 
@@ -155,6 +289,10 @@ namespace openVCB {
 				if (np.x < 0 || np.x >= width ||
 					np.y < 0 || np.y >= height) continue;
 
+				// Ignore any bundles
+				if (image[np.x + np.y * width].ink == (int16_t)Ink::BundleOff)
+					continue;
+
 				const int dstGID = indexImage[np.x + np.y * width];
 				if (srcGID != dstGID && dstGID != -1 && conSet.insert(((long long)srcGID << 32) | dstGID).second)
 					conList.push_back({ srcGID, dstGID });
@@ -168,14 +306,30 @@ namespace openVCB {
 		for (ivec2 p : writeInks) {
 			const int dstGID = indexImage[p.x + p.y * width];
 
+			// Check if we got any wire bundles as baggage
+			int oldTraceIdx = std::get<0>(indexDict[dstGID]);
+			auto range = bundleCons.equal_range(oldTraceIdx);
+
 			for (int k = 0; k < 4; k++) {
 				ivec2 np = p + fourNeighbors[k];
 				if (np.x < 0 || np.x >= width ||
 					np.y < 0 || np.y >= height) continue;
 
+				// Ignore any bundles
+				if (image[np.x + np.y * width].ink == (int16_t)Ink::BundleOff)
+					continue;
+
 				const int srcGID = indexImage[np.x + np.y * width];
-				if (srcGID != dstGID && srcGID != -1 && conSet.insert(((long long)srcGID << 32) | dstGID).second)
+				if (srcGID != dstGID && srcGID != -1 && conSet.insert(((long long)srcGID << 32) | dstGID).second) {
 					conList.push_back({ srcGID, dstGID });
+
+					// Tack on those for the bundle too
+					for (auto itr = range.first; itr != range.second; itr++) {
+						int bundleID = writeMap.ptr[itr->second];
+						if (conSet.insert(((long long)srcGID << 32) | bundleID).second)
+							conList.push_back({ srcGID, bundleID });
+					}
+				}
 			}
 		}
 		size_t numComp2Write = conSet.size();
