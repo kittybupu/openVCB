@@ -12,8 +12,11 @@ namespace openVCB {
 	}
 
 	string getNext(char* buff, int& pos) {
-		while (buff[pos] == ' ') pos++;
+		while (buff[pos] == ' ' || buff[pos] == '\t') pos++;
 		char* ptr = strchr(buff + pos, ' ');
+		char* tab = strchr(buff + pos, '\t');
+		if (ptr == nullptr || (tab != nullptr && tab < ptr))
+			ptr = tab;
 		if (!ptr) {
 			string res = string(buff + pos);
 			pos = -1;
@@ -21,14 +24,14 @@ namespace openVCB {
 		}
 		else {
 			string res = string(buff + pos, ptr);
-			while (*ptr == ' ') ptr++;
+			while (*ptr == ' ' || *ptr == '\t') ptr++;
 			pos = ptr - buff;
 			return res;
 		}
 	}
 
 	string getNextLine(char* buff, int& pos) {
-		while (buff[pos] && (buff[pos] == ' ' || buff[pos] == ';' || buff[pos] == '\n')) pos++;
+		while (buff[pos] && (buff[pos] == ' ' || buff[pos] == '\t' || buff[pos] == ';' || buff[pos] == '\n')) pos++;
 		int start = pos;
 		int end = -1;
 		while (buff[pos] && buff[pos] != '\n' && buff[pos] != ';' && buff[pos]) {

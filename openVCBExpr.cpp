@@ -237,7 +237,7 @@ void parser::get_token() {
 		++exp_ptr;
 
 	tok_type = 0;
-	if (strchr("+-/%*|&^~!><() ", *exp_ptr)) {
+	if (strchr("+-/%*|&^~!><() \t", *exp_ptr)) {
 		tok_type = DELIMITER;
 		*temp++ = *exp_ptr++;
 		if (*exp_ptr == '<' || *exp_ptr == '>')
