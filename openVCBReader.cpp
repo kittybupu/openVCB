@@ -271,7 +271,7 @@ namespace openVCB {
 			//if decoration is not used, make it explicit for simulator
 			if (!used) {
 				delete[] decoData;
-				decoData = NULL;
+				decoData = nullptr;
 			}
 		}
 	}
