@@ -350,9 +350,9 @@ namespace openVCB {
 			vecPalette.push_back(std::stoul(val, nullptr, 16));
 		}
 
-		ledPaletteCount = vecPalette.size();
-		ledPalette = new int[ledPaletteCount];
-		std::copy(vecPalette.begin(), vecPalette.end(), ledPalette);
+		for (int i = 0; i < std::min((int)vecPalette.size(), 16) ; i++) {
+			ledPalette[i] = vecPalette[i];
+		}
 
 		split(godotObj, "\"vmem_settings\": [ ", pos);
 
