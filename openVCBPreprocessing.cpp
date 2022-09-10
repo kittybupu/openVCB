@@ -215,8 +215,8 @@ namespace openVCB {
 							// Check ink type and handle crosses
 							if (newInk == Ink::Cross) {
 								np += fourNeighbors[k];
-								if (np.x < 0 || np.x > width ||
-									np.y < 0 || np.y > height) continue;
+								if (np.x < 0 || np.x >= width ||
+									np.y < 0 || np.y >= height) continue;
 
 								nidx = np.x + np.y * width;
 								if (visited[nidx] & 1) continue;
