@@ -54,18 +54,13 @@ namespace openVCB {
         return true;
     }
 
-    std::string removeCharsFromString(std::string str, std::string charsToRemove) {
-        for (size_t i = 0; i < charsToRemove.length(); ++i) {
-            str.erase(remove(str.begin(), str.end(), charsToRemove[i]), str.end());
-        }
-
+    std::string removeWhitespace(std::string str) {
+        str.erase(remove_if(str.begin(), str.end(), std::isspace), str.end());
         return str;
     }
 
     bool Project::readFromBlueprint(std::string clipboardData) {		
-
-        //remove whitespace
-        clipboardData = removeCharsFromString(clipboardData, " \t\r\n");
+        clipboardData = removeWhitespace(clipboardData);
 
         if (!isBase64(clipboardData)) {
             return false;
