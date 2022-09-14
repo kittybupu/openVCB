@@ -26,12 +26,11 @@ namespace openVCB {
 		std::vector<ivec2>& readInks, std::vector<ivec2>& writeInks) {
 
 		bundleStack.push_back(pos);
+		visited[pos.x + pos.y * width] |= mask;
+
 		while (bundleStack.size()) {
 			const ivec2 p = bundleStack.back();
 			bundleStack.pop_back();
-
-			const int bidx = p.x + p.y * width;
-			visited[bidx] |= mask;
 
 			// Check four directions
 			for (int k = 0; k < 4; k++) {
@@ -51,22 +50,28 @@ namespace openVCB {
 				if (newInk == Ink::ReadOff) {
 					if (nvis & 1) continue;
 					readInks.push_back(np);
-					if ((mask >> 16) == 2)
+					if ((mask >> 16) == 2) {
+						visited[nidx] |= 1;
 						stack.push_back(np);
+					}
 					continue;
 				}
 				else if (newInk == Ink::WriteOff) {
 					if (nvis & 1) continue;
 					writeInks.push_back(np);
-					if ((mask >> 17) == 2)
+					if ((mask >> 17) == 2) {
+						visited[nidx] |= 1;
 						stack.push_back(np);
+					}
 					continue;
 				}
 				else if (newInk == Ink::TraceOff) {
 					if (nvis & 1) continue;
 					// We will only connect to traces of the matching color
-					if ((mask >> newPix.meta) == 2)
+					if ((mask >> newPix.meta) == 2) {
+						visited[nidx] |= 1;
 						stack.push_back(np);
+					}
 					continue;
 				}
 				else if (newInk == Ink::Cross) {
@@ -79,8 +84,10 @@ namespace openVCB {
 					newInk = image[np.x + np.y * width].getInk();
 				}
 
-				if (newInk == Ink::BundleOff)
+				if (newInk == Ink::BundleOff) {
+					visited[nidx] |= mask;
 					bundleStack.push_back(np);
+				}
 			}
 		}
 	}
@@ -88,7 +95,7 @@ namespace openVCB {
 	void Project::preprocess(bool useGorder) {
 		// Turn off any inks that start as off
 #pragma omp parallel for schedule(static, 8192)
-		for (size_t i = 0; i < width * height; i++) {
+		for (int i = 0; i < width * height; i++) {
 			Ink ink = (Ink)image[i].ink;
 			switch (ink) {
 			case Ink::Trace:
@@ -155,12 +162,12 @@ namespace openVCB {
 
 					// DFS
 					stack.push_back(ivec2(x, y));
+					visited[x + y * width] |= 1;
 					while (stack.size()) {
 						const ivec2 p = stack.back();
 						stack.pop_back();
 
 						const int idx = p.x + p.y * width;
-						visited[idx] |= 1;
 						indexImage[idx] = gid;
 
 						for (int k = 0; k < 4; k++) {
@@ -226,14 +233,18 @@ namespace openVCB {
 							// Push back if Allowable
 							if (newInk == Ink::ReadOff && ink == Ink::TraceOff) {
 								readInks.push_back(np);
+								visited[nidx] |= 1;
 								stack.push_back(np);
 							}
 							else if (newInk == Ink::WriteOff && ink == Ink::TraceOff) {
 								writeInks.push_back(np);
+								visited[nidx] |= 1;
 								stack.push_back(np);
 							}
-							else if (newInk == ink)
+							else if (newInk == ink) {
+								visited[nidx] |= 1;
 								stack.push_back(np);
+							}
 						}
 					}
 
