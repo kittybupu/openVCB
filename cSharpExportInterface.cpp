@@ -24,7 +24,6 @@ Project* proj = nullptr;
 thread* simThread = nullptr;
 mutex simLock;
 
-size_t numTicks = 0;
 float targetTPS = 0;
 double maxTPS = 0;
 bool run = true;
@@ -53,7 +52,6 @@ void simFunc() {
 
 			// Use timings to estimate max possible tps
 			desiredTicks = desiredTicks - tickAmount;
-			numTicks += tickAmount;
 			maxTPS = tickAmount / duration_cast<duration<double>>(e - s).count();
 			if (isfinite(maxTPS))
 				tpsEst = glm::clamp(glm::mix(maxTPS, tpsEst, 0.95), 1., 1e8);
@@ -80,7 +78,7 @@ extern "C" {
 	}
 
 	EXPORT_API size_t getNumTicks() {
-		return numTicks;
+		return proj->tickNum;
 	}
 
 	EXPORT_API float getMaxTPS() {
@@ -100,7 +98,6 @@ extern "C" {
 		targetTPS = 0;
 		simLock.lock();
 		proj->tick(tick);
-		numTicks += tick;
 		simLock.unlock();
 		targetTPS = tps;
 	}
@@ -166,6 +163,10 @@ extern "C" {
 		memcpy(data, proj->states, sizeof(int) * size);
 		delete[] proj->states;
 		proj->states = (InkState*)data;
+	}
+
+	EXPORT_API void addInstrumentBuffer(InstrumentBuffer buffer) {
+		proj->instrumentBuffers.push_back(buffer);
 	}
 
 	EXPORT_API void setVMemMemory(int* data, int size) {

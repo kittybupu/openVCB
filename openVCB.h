@@ -157,6 +157,14 @@ namespace openVCB {
 		}
 	};
 
+	// This is for asyncronous exchange of data 
+	// for stuff like audio and signal scopes
+	struct InstrumentBuffer {
+		int idx;
+		int16_t* buffer;
+		int bufferSize;
+	};
+
 	class Project {
 	public:
 		int* vmem = nullptr; // null if vmem is not used
@@ -189,6 +197,8 @@ namespace openVCB {
 
 		// Map of symbols during assembleVmem()
 		std::unordered_map<std::string, long long> assemblySymbols;
+		std::vector<InstrumentBuffer> instrumentBuffers;
+		unsigned long long tickNum = 0;
 
 		// Event queue
 		int* updateQ[2]{ nullptr, nullptr };
@@ -248,7 +258,7 @@ namespace openVCB {
 			updateQ[1][qSize++] = gid;
 			return true;
 #endif
-		}
-	};
+	}
+};
 
 }

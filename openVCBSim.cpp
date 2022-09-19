@@ -10,6 +10,12 @@ namespace openVCB {
 		long long events = 0;
 		for (size_t i = 0; i < numTicks; i++) {
 			if (events > maxEvents) return i;
+
+			for (auto& inst : instrumentBuffers) 
+				inst.buffer[tickNum % inst.bufferSize] = states[inst.idx].activeInputs;
+
+			tickNum++;
+
 			// VMem integration
 			if (vmem) {
 				// Get current address
