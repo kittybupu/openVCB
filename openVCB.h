@@ -160,9 +160,9 @@ namespace openVCB {
 	// This is for asyncronous exchange of data 
 	// for stuff like audio and signal scopes
 	struct InstrumentBuffer {
-		int idx;
 		int16_t* buffer;
 		int bufferSize;
+		int idx;
 	};
 
 	class Project {

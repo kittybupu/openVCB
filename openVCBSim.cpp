@@ -11,7 +11,7 @@ namespace openVCB {
 		for (size_t i = 0; i < numTicks; i++) {
 			if (events > maxEvents) return i;
 
-			for (auto& inst : instrumentBuffers) 
+			for (auto& inst : instrumentBuffers)
 				inst.buffer[tickNum % inst.bufferSize] = states[inst.idx].activeInputs;
 
 			tickNum++;
@@ -155,12 +155,12 @@ namespace openVCB {
 							nxtInk == Ink::XorOff || nxtInk == Ink::XnorOff)
 							tryEmit(nxtId);
 					}
-				}
+			}
 
 				// Swap buffer
 				std::swap(updateQ[0], updateQ[1]);
-			}
 		}
-		return numTicks;
 	}
+		return numTicks;
+}
 }
