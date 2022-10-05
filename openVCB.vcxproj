@@ -151,8 +151,8 @@
     <ClCompile Include="gorder\UnitHeap.cpp" />
     <ClCompile Include="gorder\Util.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="opennVCBAssembler.cpp" />
     <ClCompile Include="openVCB.cpp" />
+    <ClCompile Include="openVCBAssembler.cpp" />
     <ClCompile Include="openVCBBlueprint.cpp" />
     <ClCompile Include="openVCBExpr.cpp" />
     <ClCompile Include="openVCBPreprocessing.cpp" />

@@ -30,29 +30,36 @@ namespace openVCB {
 		}
 	}
 
-	string getNextLine(char* buff, int& pos) {
-		while (buff[pos] && (buff[pos] == ' ' || buff[pos] == '\t' || buff[pos] == ';' || buff[pos] == '\n')) pos++;
+	string getNextLine(char* buff, int& pos, int& lineNum) {
+		while (buff[pos] && (buff[pos] == ' ' || buff[pos] == '\t' || buff[pos] == ';' || buff[pos] == '\n')) {
+			pos++;
+			if (buff[pos] == '\n') lineNum++;
+		}
 		int start = pos;
 		int end = -1;
-		while (buff[pos] && buff[pos] != '\n' && buff[pos] != ';' && buff[pos]) {
+		while (buff[pos] && buff[pos] != '\n' && buff[pos] != ';') {
 			if (end < 0 && buff[pos] == '#') end = pos;
 			pos++;
 		}
+		if (buff[pos] == '\n') lineNum++;
 		if (end < 0) end = pos;
 		return string(buff + start, buff + end);
 	}
 
 	void Project::assembleVmem(char* err) {
 		if (!vmem) return;
+		lineNumbers.clear();
 		// printf("%s\n", assembly.c_str());
 
 		// Scan through everything once to obtain values for labels
 		assemblySymbols.clear();
 		int loc = 1;
 		int lineLoc = 0;
+		int lineNum = 0;
+		char* asmBuffer = (char*)assembly.c_str();
 		while (lineLoc != assembly.size()) {
 			// Read a line in.
-			string line = getNextLine((char*)assembly.c_str(), lineLoc);
+			string line = getNextLine(asmBuffer, lineLoc, lineNum);
 			if (line.size() == 0) continue;
 			char* buff = (char*)line.c_str();
 			// printf("Line: %s\n", buff);
@@ -80,10 +87,13 @@ namespace openVCB {
 		// Scan through everything again to assemble
 		loc = 1;
 		lineLoc = 0;
+		lineNum = 0;
 		while (lineLoc != assembly.size()) {
+			int lNum = lineNum;
 			// Read a line in.
-			string line = getNextLine((char*)assembly.c_str(), lineLoc);
+			string line = getNextLine(asmBuffer, lineLoc, lineNum);
 			if (line.size() == 0) continue;
+
 			char* buff = (char*)line.c_str();
 			// printf("Line: %s\n", buff);
 
@@ -106,8 +116,10 @@ namespace openVCB {
 				auto addrVal = addr == "inline" ? loc++ : evalExpr(addr.c_str(), assemblySymbols, err);
 				auto val = evalExpr(buff + k, assemblySymbols, err);
 
+				addrVal = addrVal % vmemSize;
 				assemblySymbols[label] = addrVal;
-				vmem[addrVal % vmemSize] = val;
+				vmem[addrVal] = val;
+				lineNumbers[addrVal] = lNum;
 			}
 			else if (prefix(buff, "unpoint")) {
 				int k = 7;
@@ -121,9 +133,11 @@ namespace openVCB {
 				auto val = evalExpr(buff, assemblySymbols, err);
 
 				// printf("%s (0x%08x=0x%08x)\n", buff, loc, val);
-
-				vmem[(loc++) % vmemSize] = val;
+				auto addrVal = (loc++) % vmemSize;
+				vmem[addrVal] = val;
+				lineNumbers[addrVal] = lNum;
 			}
+
 			if (loc >= vmemSize) {
 				if (err) strcpy_s(err, 256, "VMem exceeded.");
 				break;
@@ -135,7 +149,7 @@ namespace openVCB {
 			ivec2 pos = vmAddr.pos + i * vmAddr.stride;
 			vmAddr.gids[i] = indexImage[pos.x + pos.y * width];
 			if (vmAddr.gids[i] == -1 ||
-				setOff((Ink)states[vmAddr.gids[i]].ink) != Ink::LatchOff) {
+				setOff((Logic)states[vmAddr.gids[i]].logic) != Logic::LatchOff) {
 				printf("error: No address latch at VMem position %d %d\n", pos.x, pos.y);
 				exit(-1);
 			}
@@ -144,7 +158,7 @@ namespace openVCB {
 			ivec2 pos = vmData.pos + i * vmData.stride;
 			vmData.gids[i] = indexImage[pos.x + pos.y * width];
 			if (vmAddr.gids[i] == -1 ||
-				setOff((Ink)states[vmData.gids[i]].ink) != Ink::LatchOff) {
+				setOff((Logic)states[vmData.gids[i]].logic) != Logic::LatchOff) {
 				printf("error: No data latch at VMem position %d %d\n", pos.x, pos.y);
 				exit(-1);
 			}

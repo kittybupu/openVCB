@@ -131,7 +131,7 @@ namespace openVCB {
 		for (int i = 0, lim = width * height; i < lim; i++)
 			indexImage[i] = -1;
 
-		using Group = tuple<int, Ink>;
+		using Group = tuple<int, Logic, Ink>;
 		// This translates from morton ordering to sequential ordering
 		vector<Group> indexDict;
 
@@ -249,29 +249,31 @@ namespace openVCB {
 					}
 
 					// Add on the new group
-					indexDict.push_back({ gid, ink });
+					indexDict.push_back({ gid, inkLogicType(ink), ink });
 				}
 		numGroups = writeMap.n;
 
 		// Sort groups by ink vs. component then by morton code.
 		std::sort(indexDict.begin(), indexDict.end(),
 			[](const Group& a, const Group& b) -> bool {
-				if (std::get<1>(a) == std::get<1>(b))
+				if (std::get<2>(a) == std::get<2>(b))
 					return std::get<0>(a) < std::get<0>(b);
-				return (int)std::get<1>(a) < (int)std::get<1>(b);
+				return (int)std::get<2>(a) < (int)std::get<2>(b);
 			});
 
 		// List of connections
 		// Build state vector
 		states = new InkState[writeMap.n];
+		stateInks = new Ink[writeMap.n];
 		// Borrow writeMap for a reverse mapping
 		writeMap.ptr = new int[writeMap.n + 1];
 		for (int i = 0; i < writeMap.n; i++) {
 			auto g = indexDict[i];
+
+			stateInks[i] = std::get<2>(g);
+
 			InkState& s = states[i];
-			s.ink = (unsigned char)std::get<1>(g);
-			if (s.ink == (unsigned char)Ink::BundleOff)
-				s.ink = (unsigned char)Ink::TraceOff;
+			s.logic = (unsigned char)std::get<1>(g);
 			s.visited = 0;
 			s.activeInputs = 0;
 
@@ -359,10 +361,6 @@ namespace openVCB {
 			std::vector<int> order;
 			g.GorderGreedy(order, 64);
 
-			//for (size_t i = 0; i < order.size(); i++) {
-			//	printf("%d -> %d\n", i, order[i]);
-			//}
-
 			auto oldStates = states;
 			states = new InkState[writeMap.n];
 			for (int i = 0; i < writeMap.n; i++)
@@ -381,8 +379,6 @@ namespace openVCB {
 				if (idx >= 0)
 					indexImage[i] = order[transformOrder[idx]];
 			}
-
-			// g.PrintReOrderedGraph(order);
 		}
 
 		// Stores rows per colume.
@@ -408,9 +404,9 @@ namespace openVCB {
 			auto con = conList[i];
 
 			// Set the active inputs of AND to be -numInputs
-			unsigned char dstInk = states[con.second].ink;
-			if (dstInk == (unsigned char)Ink::AndOff ||
-				dstInk == (unsigned char)Ink::NandOff)
+			Ink dstInk = stateInks[con.second];
+			if (dstInk == Ink::AndOff ||
+				dstInk == Ink::NandOff)
 				states[con.second].activeInputs--;
 
 			writeMap.rows[writeMap.ptr[con.first] + (accu[con.first]++)] = con.second;
@@ -430,20 +426,17 @@ namespace openVCB {
 
 		// Insert starting events into the queue
 		for (size_t i = 0; i < writeMap.n; i++) {
-			if ((Ink)states[i].ink == Ink::NotOff ||
-				(Ink)states[i].ink == Ink::NorOff ||
-				(Ink)states[i].ink == Ink::NandOff ||
-				(Ink)states[i].ink == Ink::XnorOff ||
-				(Ink)states[i].ink == Ink::ClockOff ||
-				(Ink)states[i].ink == Ink::Latch)
+			Ink ink = stateInks[i];
+			if (ink == Ink::NotOff ||
+				ink == Ink::NorOff ||
+				ink == Ink::NandOff ||
+				ink == Ink::XnorOff ||
+				ink == Ink::ClockOff ||
+				ink == Ink::Latch)
 				updateQ[0][qSize++] = i;
 
-			if ((Ink)states[i].ink == Ink::Latch) {
-				states[i].ink = (unsigned char)Ink::LatchOff;
+			if (ink == Ink::Latch)
 				states[i].activeInputs = 1;
-			}
 		}
-
-		// printf("%d\n", writeMap.n);
 	}
 }

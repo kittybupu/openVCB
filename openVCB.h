@@ -32,6 +32,32 @@ namespace openVCB {
 	/// 8 bit state.
 	/// 7 bit type + 1 active bit
 	/// 
+	/// Add new logic behaivor here. 
+	/// All inks define their logic from this.
+	/// This is seperate from Ink to simplify switch logic
+	/// </summary>
+	enum class Logic {
+		NonZeroOff,
+		ZeroOff,
+		XorOff,
+		XnorOff,
+		LatchOff,
+		ClockOff,
+
+		numTypes,
+
+		NonZero = 128,
+		Zero,
+		Xor,
+		Xnor,
+		Latch,
+		Clock
+	};
+
+	/// <summary>
+	/// 8 bit state.
+	/// 7 bit type + 1 active bit
+	/// 
 	/// Add potential ink types here. 
 	/// It is VERY important to keep components in pairs for on and off to
 	/// to make sure the values are aligned correctly. 
@@ -113,6 +139,52 @@ namespace openVCB {
 		return (int)ink >> 7;
 	}
 
+	// Sets the ink type to be on or off
+	inline Logic setOn(Logic logic, bool state) {
+		return (Logic)(((int)logic & 0x7f) | (state << 7));
+	}
+
+	// Sets the ink type to be on
+	inline Logic setOn(Logic logic) {
+		return (Logic)(((int)logic & 0x7f) | 128);
+	}
+
+	// Sets the ink type to be off
+	inline Logic setOff(Logic logic) {
+		return (Logic)((int)logic & 0x7f);
+	}
+
+	// Gets the ink active state
+	inline bool getOn(Logic logic) {
+		return (int)logic >> 7;
+	}
+
+	// Gets the logic type of said ink
+	// Define the logics of each ink here.
+	inline Logic inkLogicType(Ink ink) {
+		ink = setOff(ink);
+		switch (ink) {
+		case Ink::NotOff:
+		case Ink::NorOff:
+		case Ink::AndOff:
+			return Logic::ZeroOff;
+
+		case Ink::XorOff:
+			return Logic::XorOff;
+
+		case Ink::XnorOff:
+			return Logic::XnorOff;
+
+		case Ink::LatchOff:
+			return Logic::LatchOff;
+
+		case Ink::ClockOff:
+			return Logic::ClockOff;
+		}
+
+		return Logic::NonZeroOff;
+	}
+
 	// Gets the string name of the ink
 	const char* getInkString(Ink ink);
 
@@ -130,8 +202,8 @@ namespace openVCB {
 		unsigned char visited;
 #endif
 
-		// Current ink
-		unsigned char ink;
+		// Current logic state
+		unsigned char logic;
 	};
 
 	struct SparseMat {
@@ -193,10 +265,14 @@ namespace openVCB {
 		// Adjacentcy matrix
 		// By default, the indices from ink groups first and then component groups
 		SparseMat writeMap = {};
+		// Stores the logic states of each group
 		InkState* states = nullptr;
+		// Stores the actual ink type of each group
+		Ink* stateInks = nullptr;
 
 		// Map of symbols during assembleVmem()
 		std::unordered_map<std::string, long long> assemblySymbols;
+		std::unordered_map<long long, long long> lineNumbers;
 		std::vector<InstrumentBuffer> instrumentBuffers;
 		unsigned long long tickNum = 0;
 
@@ -235,8 +311,14 @@ namespace openVCB {
 		// Does nothing if it's not a latch
 		void toggleLatch(glm::ivec2 pos);
 
+		// Toggles the latch at position. 
+		// Does nothing if it's not a latch
+		void toggleLatch(int gid);
+
 		// Preprocesses the image into the simulation format
+		// Note: Gorder is often slower. It is here as an experiment
 		void preprocess(bool useGorder = false);
+
 
 		// Advances the simulation by n ticks
 		int tick(int numTicks = 1, long long maxEvents = 0x7fffffffffffffffll);
@@ -258,7 +340,7 @@ namespace openVCB {
 			updateQ[1][qSize++] = gid;
 			return true;
 #endif
-	}
-};
+		}
+	};
 
 }

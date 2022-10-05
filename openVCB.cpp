@@ -11,7 +11,11 @@ namespace openVCB {
 			pos.y < 0 || pos.y >= height)
 			return;
 		const int gid = indexImage[pos.x + pos.y * width];
-		if (setOff((Ink)states[gid].ink) != Ink::LatchOff)
+		toggleLatch(gid);
+	}
+
+	void Project::toggleLatch(int gid) {
+		if (setOff(stateInks[gid]) != Ink::LatchOff)
 			return;
 		states[gid].activeInputs = 1;
 		if (states[gid].visited) return;
@@ -30,6 +34,7 @@ namespace openVCB {
 		if (writeMap.ptr) delete[] writeMap.ptr;
 		if (writeMap.rows) delete[] writeMap.rows;
 		if (states) delete[] states;
+		if (stateInks) delete[] stateInks;
 		if (updateQ[0]) delete[] updateQ[0];
 		if (updateQ[1]) delete[] updateQ[1];
 		if (lastActiveInputs) delete[] lastActiveInputs;
@@ -47,7 +52,7 @@ namespace openVCB {
 
 		if (idx == -1) return { Ink::None, -1 };
 
-		unsigned char state = states[idx].ink;
+		unsigned char state = states[idx].logic;
 		type = (Ink)(((int)type & 0x7f) | (state & 0x80));
 		return { type, idx };
 	}

@@ -21,7 +21,7 @@ namespace openVCB {
 				// Get current address
 				int addr = 0;
 				for (int k = 0; k < vmAddr.numBits; k++)
-					addr |= (int)getOn((Ink)states[vmAddr.gids[k]].ink) << k;
+					addr |= (int)getOn((Logic)states[vmAddr.gids[k]].logic) << k;
 
 				if (addr != lastVMemAddr) {
 					// Load address
@@ -30,7 +30,7 @@ namespace openVCB {
 
 					// Turn on those latches
 					for (int k = 0; k < vmData.numBits; k++) {
-						bool isOn = getOn((Ink)states[vmData.gids[k]].ink);
+						bool isOn = getOn((Logic)states[vmData.gids[k]].logic);
 						if (((data >> k) & 1) != isOn) {
 							states[vmData.gids[k]].activeInputs = 1;
 							if (states[vmData.gids[k]].visited) continue;
@@ -47,7 +47,7 @@ namespace openVCB {
 					// Write address
 					int data = 0;
 					for (int k = 0; k < vmData.numBits; k++)
-						data |= (int)getOn((Ink)states[vmData.gids[k]].ink) << k;
+						data |= (int)getOn((Logic)states[vmData.gids[k]].logic) << k;
 					vmem[addr] = data;
 				}
 			}
@@ -61,15 +61,15 @@ namespace openVCB {
 				// Copy over the current number of active inputs
 				for (size_t i = 0; i < numEvents; i++) {
 					const int gid = updateQ[0][i];
-					const unsigned char ink = states[gid].ink;
+					const unsigned char ink = states[gid].logic;
 
 					// Reset visited flag
 					states[gid].visited = 0;
 
 					// Copy over last active inputs
 					lastActiveInputs[i] = states[gid].activeInputs;
-					if (ink == (unsigned char)Ink::Latch ||
-						ink == (unsigned char)Ink::LatchOff)
+					if (ink == (unsigned char)Logic::Latch ||
+						ink == (unsigned char)Logic::LatchOff)
 						states[gid].activeInputs = 0;
 				}
 
@@ -79,45 +79,38 @@ namespace openVCB {
 				// Main update loop
 				for (int i = 0; i < numEvents; i++) {
 					int gid = updateQ[0][i];
-					Ink curInk = (Ink)states[gid].ink;
+					Logic curInk = (Logic)states[gid].logic;
 
 					const bool lastActive = getOn(curInk);
 					const int lastInputs = lastActiveInputs[i];
 					bool nextActive = false;
 
-					const Ink offInk = setOff(curInk);
+					const Logic offInk = setOff(curInk);
 					switch (offInk) {
-					case Ink::TraceOff:
-					case Ink::BufferOff:
-					case Ink::OrOff:
-					case Ink::NandOff:
+					case Logic::NonZeroOff:
 						nextActive = lastInputs != 0;
 						break;
 
-					case Ink::NotOff:
-					case Ink::NorOff:
-					case Ink::AndOff:
+					case Logic::ZeroOff:
 						nextActive = lastInputs == 0;
 						break;
 
-					case Ink::XorOff:
+					case Logic::XorOff:
 						nextActive = lastInputs % 2;
 						break;
 
-					case Ink::XnorOff:
+					case Logic::XnorOff:
 						nextActive = !(lastInputs % 2);
 						break;
 
-					case Ink::LatchOff:
+					case Logic::LatchOff:
 						nextActive = lastActive ^ (lastInputs % 2);
 						break;
-					case Ink::ClockOff:
+
+					case Logic::ClockOff:
 						nextActive = (!traceUpdate) ^ lastActive;
 						// As a special case, we are going to self emit
 						tryEmit(gid);
-						break;
-					case Ink::LedOff:
-						nextActive = lastInputs > 0;
 						break;
 					}
 
@@ -126,7 +119,7 @@ namespace openVCB {
 						continue;
 
 					// Update the state
-					states[gid].ink = (unsigned char)setOn(curInk, nextActive);
+					states[gid].logic = (unsigned char)setOn(curInk, nextActive);
 
 					// Loop over neighbors
 					const int delta = nextActive ? 1 : -1;
@@ -134,10 +127,10 @@ namespace openVCB {
 					int end = writeMap.ptr[gid + 1];
 					for (; r < end; r++) {
 						const int nxtId = writeMap.rows[r];
-						const Ink nxtInk = setOff((Ink)states[nxtId].ink);
+						const Logic nxtInk = setOff((Logic)states[nxtId].logic);
 
 						// Ignore falling edge for latches
-						if (!nextActive && nxtInk == Ink::LatchOff)
+						if (!nextActive && nxtInk == Logic::LatchOff)
 							continue;
 
 						// Update actives
@@ -152,15 +145,15 @@ namespace openVCB {
 						// We can skip any updates that do not hover around 0
 						// with a few exceptions.
 						if (lastNxtInput == 0 || lastNxtInput + delta == 0 ||
-							nxtInk == Ink::XorOff || nxtInk == Ink::XnorOff)
+							nxtInk == Logic::XorOff || nxtInk == Logic::XnorOff)
 							tryEmit(nxtId);
 					}
-			}
+				}
 
 				// Swap buffer
 				std::swap(updateQ[0], updateQ[1]);
+			}
 		}
-	}
 		return numTicks;
-}
+	}
 }

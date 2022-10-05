@@ -21,9 +21,6 @@
     <ClCompile Include="openVCBSim.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="opennVCBAssembler.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="openVCB.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -46,6 +43,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="openVCBBlueprint.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="openVCBAssembler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
