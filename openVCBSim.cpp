@@ -11,9 +11,6 @@ namespace openVCB {
 		for (; res.numTicksProcessed < numTicks; res.numTicksProcessed++) {
 			if (res.numEventsProcessed > maxEvents) return res;
 
-			for (auto& inst : instrumentBuffers)
-				inst.buffer[tickNum % inst.bufferSize] = states[inst.idx];
-
 			for (auto itr = breakpoints.begin(); itr != breakpoints.end(); itr++) {
 				auto state = states[itr->first];
 				if (state.logic != (unsigned char)itr->second) {
@@ -22,6 +19,9 @@ namespace openVCB {
 				}
 			}
 			if (res.breakpoint) return res;
+
+			for (auto& inst : instrumentBuffers)
+				inst.buffer[tickNum % inst.bufferSize] = states[inst.idx];
 
 			tickNum++;
 
