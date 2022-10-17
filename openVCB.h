@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <map>
 
 // Enable multithreading
 // #define OVCB_MT
@@ -232,9 +233,15 @@ namespace openVCB {
 	// This is for asyncronous exchange of data 
 	// for stuff like audio and signal scopes
 	struct InstrumentBuffer {
-		int16_t* buffer;
+		InkState* buffer;
 		int bufferSize;
 		int idx;
+	};
+
+	struct SimulationResult {
+		long long numEventsProcessed;
+		int numTicksProcessed;
+		bool breakpoint;
 	};
 
 	class Project {
@@ -274,6 +281,7 @@ namespace openVCB {
 		std::unordered_map<std::string, long long> assemblySymbols;
 		std::unordered_map<long long, long long> lineNumbers;
 		std::vector<InstrumentBuffer> instrumentBuffers;
+		std::map<int, Logic> breakpoints;
 		unsigned long long tickNum = 0;
 
 		// Event queue
@@ -319,9 +327,12 @@ namespace openVCB {
 		// Note: Gorder is often slower. It is here as an experiment
 		void preprocess(bool useGorder = false);
 
+		// Methods to add and remove breakpoints
+		void addBreakpoint(int gid);
+		void removeBreakpoint(int gid);
 
 		// Advances the simulation by n ticks
-		int tick(int numTicks = 1, long long maxEvents = 0x7fffffffffffffffll);
+		SimulationResult tick(int numTicks = 1, long long maxEvents = 0x7fffffffffffffffll);
 
 		// Emits an event if it is not yet in the queue
 		inline bool tryEmit(int gid) {

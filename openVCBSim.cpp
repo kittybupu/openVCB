@@ -6,13 +6,22 @@ namespace openVCB {
 	using namespace std;
 	using namespace glm;
 
-	int Project::tick(int numTicks, long long maxEvents) {
-		long long events = 0;
-		for (size_t i = 0; i < numTicks; i++) {
-			if (events > maxEvents) return i;
+	SimulationResult Project::tick(int numTicks, long long maxEvents) {
+		SimulationResult res{};
+		for (; res.numTicksProcessed < numTicks; res.numTicksProcessed++) {
+			if (res.numEventsProcessed > maxEvents) return res;
 
 			for (auto& inst : instrumentBuffers)
-				inst.buffer[tickNum % inst.bufferSize] = states[inst.idx].activeInputs;
+				inst.buffer[tickNum % inst.bufferSize] = states[inst.idx];
+
+			for (auto itr = breakpoints.begin(); itr != breakpoints.end(); itr++) {
+				auto state = states[itr->first];
+				if (state.logic != (unsigned char)itr->second) {
+					itr->second = (Logic)state.logic;
+					res.breakpoint = true;
+				}
+			}
+			if (res.breakpoint) return res;
 
 			tickNum++;
 
@@ -55,7 +64,7 @@ namespace openVCB {
 			for (int traceUpdate = 0; traceUpdate < 2; traceUpdate++) { // We update twice per tick
 				// Remember stuff
 				const int numEvents = qSize;
-				events += numEvents;
+				res.numEventsProcessed += numEvents;
 				qSize = 0;
 
 				// Copy over the current number of active inputs
@@ -154,6 +163,14 @@ namespace openVCB {
 				std::swap(updateQ[0], updateQ[1]);
 			}
 		}
-		return numTicks;
+		return res;
+	}
+
+	void Project::addBreakpoint(int gid) {
+		breakpoints[gid] = (Logic)states[gid].logic;
+	}
+
+	void Project::removeBreakpoint(int gid) {
+		breakpoints.erase(gid);
 	}
 }
