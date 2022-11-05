@@ -19,6 +19,6 @@ https://store.steampowered.com/app/1885690/Virtual_Circuit_Board/
 * Gorder (included)
 
 ## License
-This project is licensed under the GPL 3 license. 
+This project is licensed under the MIT license for the time being. 
 **Additionally, users agree to never distribute this library together with a graphical .vcb editor.** (Viewers are fine.)
 Get the editor at https://store.steampowered.com/app/1885690/Virtual_Circuit_Board/
