@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\Gorder">
+      <UniqueIdentifier>{1b811991-dcea-4e2c-8886-6d7b6dfeeb2c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Gorder">
+      <UniqueIdentifier>{571d3904-f8c8-4bf3-8263-87c7ff0f978c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -33,36 +39,51 @@
     <ClCompile Include="openVCBReader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="gorder\Graph.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="gorder\UnitHeap.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="gorder\Util.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="openVCBBlueprint.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="openVCBAssembler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="cSharpExportInterface.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gorder\Util.cpp">
+      <Filter>Source Files\Gorder</Filter>
+    </ClCompile>
+    <ClCompile Include="gorder\UnitHeap.cpp">
+      <Filter>Source Files\Gorder</Filter>
+    </ClCompile>
+    <ClCompile Include="gorder\Graph.cpp">
+      <Filter>Source Files\Gorder</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="openVCB.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="openVCBExpr.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="gorder\Graph.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="gorder\UnitHeap.h">
+    <ClInclude Include="openVCB_Data.hh">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="gorder\Util.h">
+      <Filter>Header Files\Gorder</Filter>
+    </ClInclude>
+    <ClInclude Include="gorder\Graph.h">
+      <Filter>Header Files\Gorder</Filter>
+    </ClInclude>
+    <ClInclude Include="gorder\UnitHeap.h">
+      <Filter>Header Files\Gorder</Filter>
+    </ClInclude>
+    <ClInclude Include="utils.hh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Common.hh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="openVCB.hh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="openVCBExpr.hh">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

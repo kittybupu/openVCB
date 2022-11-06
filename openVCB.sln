@@ -7,12 +7,18 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "openVCB", "openVCB.vcxproj"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		ClangRelease|x64 = ClangRelease|x64
+		ClangRelease|x86 = ClangRelease|x86
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.ClangRelease|x64.ActiveCfg = ClangRelease|x64
+		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.ClangRelease|x64.Build.0 = ClangRelease|x64
+		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.ClangRelease|x86.ActiveCfg = ClangRelease|Win32
+		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.ClangRelease|x86.Build.0 = ClangRelease|Win32
 		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.Debug|x64.ActiveCfg = Debug|x64
 		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.Debug|x64.Build.0 = Debug|x64
 		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.Debug|x86.ActiveCfg = Debug|Win32
