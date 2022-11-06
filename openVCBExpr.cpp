@@ -1,6 +1,7 @@
 // Code for instruction expression parsing.
 
-#include "openVCBExpr.h"
+#include "openVCB.hh"
+#include "openVCBExpr.hh"
 
 #include <iostream>
 #include <cstdlib>
@@ -11,8 +12,10 @@
 
 using namespace std;
 
+
 enum types { DELIMITER = 1, VARIABLE };
-const int NUMVARS = 26;
+
+int const NUMVARS = 26;
 class parser {
 	char* exp_ptr; // points to the expression
 	char token[512]; // holds current token
@@ -175,7 +178,7 @@ void parser::eval_expr8(long long& result) {
 	}
 	else {
 		if (isdigit(*token)) {
-			const char id = tolower(*(token + 1));
+                      char const id = tolower(*(token + 1));
 			if (id == 'x') {
 				char* ptr = token + 2;
 				result = 0;
@@ -251,9 +254,9 @@ void parser::get_token() {
 	*temp = '\0';
 }
 
-long long openVCB::evalExpr(const char* expr,
-	std::unordered_map<std::string, long long>& symbols,
-	char* err) {
+long long openVCB::evalExpr(char const *                               expr,
+                            std::unordered_map<std::string, long long>&symbols,
+                            char*                                      err) {
 
 	parser p(symbols);
 	auto res = p.eval_expr((char*)expr);
@@ -264,3 +267,4 @@ long long openVCB::evalExpr(const char* expr,
 	}
 	return res;
 }
+
