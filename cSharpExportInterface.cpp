@@ -5,6 +5,10 @@
 #include <fstream>
 #include <sstream>
 #include <chrono>
+#include <queue>
+
+#include <tbb/spin_mutex.h>
+
 #include "openVCB/openVCB.h"
 
 #if _MSC_VER // this is defined when compiling with Visual Studio
@@ -22,11 +26,12 @@ const float MIN_DT = 1.f / 30;
 
 Project* proj = nullptr;
 thread* simThread = nullptr;
-mutex simLock;
+tbb::spin_mutex simLock;
 
 float targetTPS = 0;
 double maxTPS = 0;
 bool run = true;
+bool breakpoint = false;
 
 void simFunc() {
 	double tpsEst = 2 / TARGET_DT;
@@ -46,15 +51,21 @@ void simFunc() {
 			// Aquire lock, simulate, and time
 			simLock.lock();
 			auto s = high_resolution_clock::now();
-			tickAmount = proj->tick(tickAmount, 100000000ll);
+			auto res = proj->tick(tickAmount, 100000000ll);
 			auto e = high_resolution_clock::now();
 			simLock.unlock();
 
 			// Use timings to estimate max possible tps
-			desiredTicks = desiredTicks - tickAmount;
-			maxTPS = tickAmount / duration_cast<duration<double>>(e - s).count();
+			desiredTicks = desiredTicks - res.numTicksProcessed;
+			maxTPS = res.numTicksProcessed / duration_cast<duration<double>>(e - s).count();
 			if (isfinite(maxTPS))
 				tpsEst = glm::clamp(glm::mix(maxTPS, tpsEst, 0.95), 1., 1e8);
+
+			if (res.breakpoint) {
+				targetTPS = 0;
+				desiredTicks = 0;
+				breakpoint = true;
+			}
 		}
 
 		// Check how much time I got left and sleep until the next check
@@ -69,6 +80,13 @@ extern "C" {
 	/*
 	* Functions to control openVCB simulations
 	*/
+
+	EXPORT_API int getLineNumber(int addr) {
+		auto itr = proj->lineNumbers.find(addr);
+		if (itr != proj->lineNumbers.end())
+			return itr->second;
+		return 0;
+	}
 
 	EXPORT_API size_t getSymbol(char* buff, int size) {
 		auto itr = proj->assemblySymbols.find(string(buff));
@@ -93,6 +111,12 @@ extern "C" {
 		targetTPS = max(0.f, tps);
 	}
 
+	EXPORT_API int pollBreakpoint() {
+		bool res = breakpoint;
+		breakpoint = false;
+		return res;
+	}
+
 	EXPORT_API void tick(int tick) {
 		float tps = targetTPS;
 		targetTPS = 0;
@@ -107,6 +131,33 @@ extern "C" {
 		targetTPS = 0;
 		simLock.lock();
 		proj->toggleLatch(glm::ivec2(x, y));
+		simLock.unlock();
+		targetTPS = tps;
+	}
+
+	EXPORT_API void toggleLatchIndex(int idx) {
+		float tps = targetTPS;
+		targetTPS = 0;
+		simLock.lock();
+		proj->toggleLatch(idx);
+		simLock.unlock();
+		targetTPS = tps;
+	}
+
+	EXPORT_API void addBreakpoint(int gid) {
+		float tps = targetTPS;
+		targetTPS = 0;
+		simLock.lock();
+		proj->addBreakpoint(gid);
+		simLock.unlock();
+		targetTPS = tps;
+	}
+
+	EXPORT_API void removeBreakpoint(int gid) {
+		float tps = targetTPS;
+		targetTPS = 0;
+		simLock.lock();
+		proj->removeBreakpoint(gid);
 		simLock.unlock();
 		targetTPS = tps;
 	}
@@ -165,8 +216,13 @@ extern "C" {
 		proj->states = (InkState*)data;
 	}
 
-	EXPORT_API void addInstrumentBuffer(InstrumentBuffer buffer) {
-		proj->instrumentBuffers.push_back(buffer);
+	EXPORT_API void addInstrumentBuffer(InkState* buff, int buffSize, int idx) {
+		float tps = targetTPS;
+		targetTPS = 0;
+		simLock.lock();
+		proj->instrumentBuffers.push_back({ buff, buffSize, idx });
+		simLock.unlock();
+		targetTPS = tps;
 	}
 
 	EXPORT_API void setVMemMemory(int* data, int size) {
@@ -182,6 +238,9 @@ extern "C" {
 		proj->width = width;
 		proj->height = height;
 		proj->image = (InkPixel*)data;
+	}
+
+	EXPORT_API void setDecoMemory(int* indices, int indLen, int* col, int colLen) {
 	}
 
 	/*
