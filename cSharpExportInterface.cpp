@@ -241,6 +241,49 @@ extern "C" {
 	}
 
 	EXPORT_API void setDecoMemory(int* indices, int indLen, int* col, int colLen) {
+		using namespace glm;
+		std::vector<bool> visited(proj->width * proj->height, false);
+		std::queue<ivec3> queue;
+
+		for (size_t y = 0; y < proj->height; y++)
+			for (size_t x = 0; x < proj->width; x++) {
+				int idx = x + y * proj->width;
+				indices[idx] = -1;
+
+				if (col[idx] != 0xffffffff) continue;
+				auto ink = openVCB::setOff(proj->image[idx].getInk());
+				if (ink == Ink::LatchOff || ink == Ink::LedOff) {
+					queue.push(ivec3(x, y, proj->indexImage[idx]));
+					visited[idx] = true;
+				}
+			}
+
+		const glm::ivec2 fourNeighbors[4]{
+			ivec2(-1, 0),
+			ivec2(0, 1),
+			ivec2(1, 0),
+			ivec2(0, -1)
+		};
+
+		while (queue.size()) {
+			auto pos = queue.front();
+			queue.pop();
+
+			indices[pos.x + pos.y * proj->width] = pos.z;
+
+			for (int k = 0; k < 4; k++) {
+				ivec2 np = (ivec2)pos + fourNeighbors[k];
+				if (np.x < 0 || np.x >= proj->width ||
+					np.y < 0 || np.y >= proj->height) continue;
+
+				int nidx = np.x + np.y * proj->width;
+				if (visited[nidx]) continue;;
+				visited[nidx] = true;
+
+				if (col[nidx] != 0xffffffff) continue;
+				queue.push(ivec3(np.x, np.y, pos.z));
+			}
+		}
 	}
 
 	/*
