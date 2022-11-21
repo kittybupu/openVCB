@@ -28,9 +28,9 @@ namespace openVCB {
 			// VMem integration
 			if (vmem) {
 				// Get current address
-				int addr = 0;
+				uint32_t addr = 0;
 				for (int k = 0; k < vmAddr.numBits; k++)
-					addr |= (int)getOn((Logic)states[vmAddr.gids[k]].logic) << k;
+					addr |= (uint32_t)getOn((Logic)states[vmAddr.gids[k]].logic) << k;
 
 				if (addr != lastVMemAddr) {
 					// Load address

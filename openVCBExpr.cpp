@@ -84,7 +84,7 @@ void parser::eval_expr3(long long& result) {
 	while ((op = *token) == '&') {
 		get_token();
 		eval_expr4(temp);
-		result = result ^ temp;
+		result = result & temp;
 	}
 }
 
