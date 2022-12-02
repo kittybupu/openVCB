@@ -302,8 +302,9 @@ namespace openVCB {
 				if (np.x < 0 || np.x >= width ||
 					np.y < 0 || np.y >= height) continue;
 
-				// Ignore any bundles
-				if (image[np.x + np.y * width].ink == (int16_t)Ink::BundleOff)
+				// Ignore any bundles or clocks
+				auto ink = image[np.x + np.y * width].ink;
+				if (ink == (int16_t)Ink::BundleOff || ink == (int16_t)Ink::ClockOff)
 					continue;
 
 				const int dstGID = indexImage[np.x + np.y * width];
@@ -431,9 +432,11 @@ namespace openVCB {
 				ink == Ink::NorOff ||
 				ink == Ink::NandOff ||
 				ink == Ink::XnorOff ||
-				ink == Ink::ClockOff ||
 				ink == Ink::Latch)
 				updateQ[0][qSize++] = i;
+
+			if (ink == Ink::ClockOff)
+				clockGIDs.push_back(i);
 
 			if (ink == Ink::Latch)
 				states[i].activeInputs = 1;

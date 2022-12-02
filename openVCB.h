@@ -269,6 +269,10 @@ namespace openVCB {
 		};
 		int numGroups;
 
+		std::vector<int> clockGIDs;
+		unsigned long long clockCounter = 0;
+		unsigned long long clockPeriod = 2;
+
 		// Adjacentcy matrix
 		// By default, the indices from ink groups first and then component groups
 		SparseMat writeMap = {};

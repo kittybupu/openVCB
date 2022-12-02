@@ -103,7 +103,7 @@ extern "C" {
 		return (float)maxTPS;
 	}
 
-	EXPORT_API int getVMemAddress() {
+	EXPORT_API uint32_t getVMemAddress() {
 		return proj->lastVMemAddr;
 	}
 
@@ -160,6 +160,10 @@ extern "C" {
 		proj->removeBreakpoint(gid);
 		simLock.unlock();
 		targetTPS = tps;
+	}
+
+	EXPORT_API void setClockPeriod(unsigned long long period) {
+		proj->clockPeriod = period;
 	}
 
 	/*

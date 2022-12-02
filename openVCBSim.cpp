@@ -61,6 +61,14 @@ namespace openVCB {
 				}
 			}
 
+			// Update the clock ink
+			if (++clockCounter >= clockPeriod)
+				clockCounter = 0;
+			if (clockCounter < 2)
+				for (auto gid : clockGIDs)
+					if (!states[gid].visited)
+						updateQ[0][qSize++] = gid;
+
 			for (int traceUpdate = 0; traceUpdate < 2; traceUpdate++) { // We update twice per tick
 				// Remember stuff
 				const int numEvents = qSize;
@@ -117,9 +125,7 @@ namespace openVCB {
 						break;
 
 					case Logic::ClockOff:
-						nextActive = (!traceUpdate) ^ lastActive;
-						// As a special case, we are going to self emit
-						tryEmit(gid);
+						nextActive = clockCounter == 0;
 						break;
 					}
 
@@ -157,14 +163,14 @@ namespace openVCB {
 							nxtInk == Logic::XorOff || nxtInk == Logic::XnorOff)
 							tryEmit(nxtId);
 					}
-				}
+			}
 
 				// Swap buffer
 				std::swap(updateQ[0], updateQ[1]);
-			}
 		}
-		return res;
 	}
+		return res;
+}
 
 	void Project::addBreakpoint(int gid) {
 		breakpoints[gid] = (Logic)states[gid].logic;

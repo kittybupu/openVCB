@@ -49,6 +49,8 @@ namespace openVCB {
 	void Project::assembleVmem(char* err) {
 		if (!vmem) return;
 		lineNumbers.clear();
+
+		char errBuff[512];
 		// printf("%s\n", assembly.c_str());
 
 		// Scan through everything once to obtain values for labels
@@ -95,13 +97,15 @@ namespace openVCB {
 			if (line.size() == 0) continue;
 
 			char* buff = (char*)line.c_str();
+			errBuff[0] = 0;
+
 			// printf("Line: %s\n", buff);
 
 			// Parse this stuff
 			if (prefix(buff, "symbol") || prefix(buff, "resymb")) {
 				int k = 6;
 				string label = getNext(buff, k);
-				auto val = evalExpr(buff + k, assemblySymbols, err);
+				auto val = evalExpr(buff + k, assemblySymbols, errBuff);
 				assemblySymbols[label] = val;
 			}
 			else if (prefix(buff, "unsymb")) {
@@ -113,8 +117,8 @@ namespace openVCB {
 				int k = 7;
 				string label = getNext(buff, k);
 				string addr = getNext(buff, k);
-				auto addrVal = addr == "inline" ? loc++ : evalExpr(addr.c_str(), assemblySymbols, err);
-				auto val = evalExpr(buff + k, assemblySymbols, err);
+				auto addrVal = addr == "inline" ? loc++ : evalExpr(addr.c_str(), assemblySymbols, errBuff);
+				auto val = evalExpr(buff + k, assemblySymbols, errBuff);
 
 				addrVal = addrVal % vmemSize;
 				assemblySymbols[label] = addrVal;
@@ -130,13 +134,16 @@ namespace openVCB {
 			else if (prefix(buff, "bookmark")) {}
 			else if (prefix(buff, "sub_bookmark")) {}
 			else {
-				auto val = evalExpr(buff, assemblySymbols, err);
+				auto val = evalExpr(buff, assemblySymbols, errBuff);
 
 				// printf("%s (0x%08x=0x%08x)\n", buff, loc, val);
 				auto addrVal = (loc++) % vmemSize;
 				vmem[addrVal] = val;
 				lineNumbers[addrVal] = lNum;
 			}
+
+			if (*errBuff)
+				sprintf(err, "line %d: %s", lineNum, errBuff);
 
 			if (loc >= vmemSize) {
 				if (err) strcpy_s(err, 256, "VMem exceeded.");
