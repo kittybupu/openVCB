@@ -52,7 +52,6 @@ constexpr auto fwrite_l(Elem const (&buf)[Num], FILE *dest)
 
 
 using namespace std::literals;
-static constexpr bool     useGorder  = false;
 static constexpr unsigned numTicks   = 10'000'000;
 static constexpr double   numTicks_d = numTicks;
 
@@ -72,7 +71,7 @@ main()
       proj->readFromVCB("sampleProject.vcb");
 
       times.emplace_back("Project preprocess", clock::now());
-      proj->preprocess(useGorder);
+      proj->preprocess();
 
       times.emplace_back("VMem assembly", clock::now());
       proj->assembleVmem();

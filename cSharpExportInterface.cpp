@@ -87,7 +87,7 @@ extern "C" {
  * Functions to control openVCB simulations
  */
 
-EXPORT_API long long
+EXPORT_API int64_t
 getLineNumber(int const addr)
 {
       auto const itr = proj->lineNumbers.find(addr);
@@ -193,7 +193,7 @@ pollBreakpoint()
 }
 
 EXPORT_API void
-setClockPeriod(unsigned long long period)
+setClockPeriod(uint64_t const period)
 {
       proj->clockPeriod = period;
 }
@@ -278,11 +278,7 @@ setStateMemory(int *data, int const size)
 EXPORT_API void
 setVMemMemory(int *data, int const size)
 {
-#ifdef OVCB_BYTE_ORIENTED_VMEM
-      proj->vmem.b = reinterpret_cast<uint8_t *>(data);
-#else
-      proj->vmem.i = reinterpret_cast<uint32_t *>(data);
-#endif
+      proj->vmem     = data;
       proj->vmemSize = size;
 }
 
@@ -309,12 +305,12 @@ setDecoMemory(_Inout_ int *__restrict const indices,
       std::vector<bool>      visited(proj->width * proj->height, false);
       std::queue<glm::ivec3> queue;
 
-      for (int32_t y = 0; y < proj->height; ++y)
+      for (int32_t y = 0; y < proj->height; ++y) {
             for (int32_t x = 0; x < proj->width; ++x) {
                   int32_t const idx = x + y * proj->width;
                   indices[idx]      = -1;
 
-                  if (static_cast<uint32_t>(col[idx]) != UINT32_C(0xFFFFFFFF))
+                  if (static_cast<uint32_t>(col[idx]) != UINT32_MAX)
                         continue;
 
                   auto const ink = setOff(proj->image[idx].ink);
@@ -323,6 +319,7 @@ setDecoMemory(_Inout_ int *__restrict const indices,
                         visited[idx] = true;
                   }
             }
+      }
 
       constexpr glm::ivec2 fourNeighbors[] = {
             glm::ivec2{-1, 0}, glm::ivec2{0,  1},
@@ -346,7 +343,7 @@ setDecoMemory(_Inout_ int *__restrict const indices,
 
                   visited[nidx] = true;
 
-                  if (static_cast<unsigned>(col[nidx]) != 0xFFFFFFFFU)
+                  if (static_cast<uint32_t>(col[nidx]) != UINT32_MAX)
                         continue;
                   queue.push({np.x, np.y, pos.z});
             }

@@ -43,7 +43,7 @@ Project::tick(int const numTicks, int64_t const maxEvents)
                   // Get current address
                   uint32_t addr = 0;
                   for (int k = 0; k < vmAddr.numBits; ++k)
-                        addr |= unsigned(getOn(states[vmAddr.gids[k]].logic)) << k;
+                        addr |= static_cast<unsigned>(getOn(states[vmAddr.gids[k]].logic)) << k;
 
                   if (addr != lastVMemAddr) {
                         // Load address
@@ -115,7 +115,7 @@ Project::tick(int const numTicks, int64_t const maxEvents)
 
                         // Copy over last active inputs
                         lastActiveInputs[i] = states[gid].activeInputs;
-                        if (ink == Logic::Latch || ink == Logic::LatchOff)
+                        if (bool(ink & Logic::LatchOff))
                               states[gid].activeInputs = 0;
                   }
 
@@ -149,7 +149,7 @@ Project::tick(int const numTicks, int64_t const maxEvents)
                               break;
 
                         case Logic::LatchOff:
-                              nextActive = (int)lastActive ^ (lastInputs % 2);
+                              nextActive = int(lastActive) ^ (lastInputs % 2);
                               break;
 
                         case Logic::ClockOff:
@@ -190,7 +190,7 @@ Project::tick(int const numTicks, int64_t const maxEvents)
                               // Inks have convenient "critical points"
                               // We can skip any updates that do not hover around 0 with a few exceptions.
                               if (lastNxtInput == 0 || lastNxtInput + delta == 0 ||
-                                  (nxtInk & (Logic::XorOff | Logic::XnorOff)) != 0) [[unlikely]]
+                                  bool(nxtInk & (Logic::XorOff | Logic::XnorOff))) [[unlikely]]
                                     tryEmit(nxtId);
                         }
                   }

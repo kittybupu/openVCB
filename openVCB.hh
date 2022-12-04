@@ -108,6 +108,7 @@ enum class Ink : uint8_t {
       Annotation,
 
       numTypes,
+      _ink_on = 0x80,
 
       Trace = 129,
       Read,
@@ -199,7 +200,7 @@ OVCB_INLINE Logic setOn(Logic const logic, unsigned const state)
 // Sets the ink type to be on
 OVCB_INLINE Logic setOn(Logic const logic)
 {
-      return (logic & 0x7F) | 128;
+      return logic | Logic::_ink_on;
 }
 
 // Sets the ink type to be off
@@ -232,7 +233,7 @@ OVCB_INLINE Ink setOn(Ink const ink, unsigned const state)
 // Sets the ink type to be on.
 OVCB_INLINE Ink setOn(Ink const ink)
 {
-      return (ink & 0x7F) | 128;
+      return ink | Ink::_ink_on;
 }
 // Sets the ink type to be off
 OVCB_INLINE Ink setOff(Ink const ink)

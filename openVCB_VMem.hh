@@ -19,73 +19,74 @@ union VMemWrapper
 
 #ifdef OVCB_BYTE_ORIENTED_VMEM
       using value_type = uint8_t;
-      ND auto       &def()       & { return b; }
-      ND auto const &def() const & { return b; }
+      ND auto       &def()       & noexcept { return b; }
+      ND auto const &def() const & noexcept { return b; }
 #else
       using value_type = uint32_t;
-      ND auto       &def()       & { return i; }
-      ND auto const &def() const & { return i; }
+      ND auto       &def()       & noexcept { return i; }
+      ND auto const &def() const & noexcept { return i; }
 #endif
 
-      VMemWrapper() = default;
-      VMemWrapper(uint32_t *ptr) : i(ptr) {}
-      VMemWrapper(uint8_t *ptr)  : b(ptr) {}
-      VMemWrapper(nullptr_t)     : i(nullptr) {}
+      VMemWrapper() noexcept = default;
+      VMemWrapper(uint32_t *ptr) noexcept : i(ptr) {}
+      VMemWrapper(uint8_t *ptr)  noexcept : b(ptr) {}
+      VMemWrapper(nullptr_t)     noexcept : i(nullptr) {}
 
       //---------------------------------------------------------------------------------
 
       // Assign pointers to the default union member.
-      VMemWrapper &operator=(void *ptr)
+      VMemWrapper &operator=(void *ptr) noexcept
       {
             def() = static_cast<value_type *>(ptr);
             return *this;
       }
 
       // Assign pointers to the default union member.
-      VMemWrapper &operator=(value_type *ptr)
+      VMemWrapper &operator=(value_type *ptr) noexcept
       {
             def() = ptr;
             return *this;
       }
 
       // Allow assigning nullptr directly.
-      VMemWrapper &operator=(std::nullptr_t)
+      VMemWrapper &operator=(std::nullptr_t) noexcept
       {
             def() = nullptr;
             return *this;
       }
 
       // Allow comparing with nullptr directly.
-      ND bool operator==(std::nullptr_t) const
+      ND bool operator==(std::nullptr_t) const noexcept
       {
             return def() != nullptr;
       }
 
       // Allow checking whether the pointer null by placing it in a boolean context
       // just as if this were a bare pointer.
-      ND explicit operator bool() const
+      ND explicit operator bool() const noexcept
       {
             return def() != nullptr;
       }
 
       // Automatically use the default member when indexing.
-      ND auto const &operator[](size_t const idx) const &
+      ND auto const &operator[](size_t const idx) const & noexcept
       {
             return def()[idx];
       }
 
       // Automatically use the default member when indexing.
-      ND auto &operator[](size_t const idx) &
+      ND auto &operator[](size_t const idx) & noexcept
       {
             return def()[idx];
       }
 
-      ND uint32_t *word_at_byte(size_t const offset) const
+      ND uint32_t *word_at_byte(size_t const offset) const noexcept
       {
             return reinterpret_cast<uint32_t *>(b + offset);
       }
 };
 
+static_assert(sizeof(VMemWrapper) == sizeof(uintptr_t));
 
 } // namespace openVCB
 #endif
