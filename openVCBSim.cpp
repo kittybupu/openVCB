@@ -8,12 +8,6 @@
 
 namespace openVCB {
 
-//[[__gnu__::__target_clones__("arch=rocketlake",
-//                             "arch=broadwell",
-//                             "arch=ivybridge",
-//                             "avx2",
-//                             "default")]]
-
 [[__gnu__::__hot__]]
 SimulationResult
 Project::tick(int const numTicks, int64_t const maxEvents)
@@ -55,6 +49,8 @@ Project::tick(int const numTicks, int64_t const maxEvents)
                         // Load address
                         lastVMemAddr  = addr;
 #ifdef OVCB_BYTE_ORIENTED_VMEM
+                        // Clang compiles this down to a very tidy handful of instructions.
+                        // In fact, it did better than I did writing assembly by hand.
                         uint32_t data = (vmem.b[addr]) | (vmem.b[addr+1]<<8) | (vmem.b[addr+2]<<16) | (vmem.b[addr+3]<<24);
 #else
                         uint32_t data = vmem.i[addr];
@@ -119,12 +115,12 @@ Project::tick(int const numTicks, int64_t const maxEvents)
 
                         // Copy over last active inputs
                         lastActiveInputs[i] = states[gid].activeInputs;
-                        if (ink == Logic::Latch || ink == Logic::LatchOff) //[[unlikely]]
+                        if (ink == Logic::Latch || ink == Logic::LatchOff)
                               states[gid].activeInputs = 0;
                   }
 
 #ifdef OVCB_MT
-#pragma omp parallel for schedule(static, 4 * 1024) num_threads(9) if (numEvents > 8 * 1024)
+# pragma omp parallel for schedule(static, 4 * 1024) num_threads(2) if (numEvents > 8 * 1024)
 #endif
                   // Main update loop
                   for (int i = 0; i < numEvents; ++i) {
