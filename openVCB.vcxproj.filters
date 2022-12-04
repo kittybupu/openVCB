@@ -13,11 +13,17 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\Gorder">
+      <UniqueIdentifier>{1b811991-dcea-4e2c-8886-6d7b6dfeeb2c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Rejects">
+      <UniqueIdentifier>{513f8745-9a69-4ef8-945d-5bc496453024}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Rejects\Gorder">
+      <UniqueIdentifier>{571d3904-f8c8-4bf3-8263-87c7ff0f978c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="openVCBSim.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -33,37 +39,72 @@
     <ClCompile Include="openVCBReader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="gorder\Graph.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="gorder\UnitHeap.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="gorder\Util.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="openVCBBlueprint.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="openVCBAssembler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="gorder\Util.cpp">
+      <Filter>Source Files\Rejects\Gorder</Filter>
+    </ClCompile>
+    <ClCompile Include="gorder\UnitHeap.cpp">
+      <Filter>Source Files\Rejects\Gorder</Filter>
+    </ClCompile>
+    <ClCompile Include="gorder\Graph.cpp">
+      <Filter>Source Files\Rejects\Gorder</Filter>
+    </ClCompile>
+    <ClCompile Include="cSharpExportInterface.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dllmain.cc">
+      <Filter>Source Files\Rejects</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files\Rejects</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="openVCB.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="openVCBExpr.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="gorder\Graph.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="gorder\UnitHeap.h">
+    <ClInclude Include="openVCB_Data.hh">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="gorder\Util.h">
+      <Filter>Header Files\Gorder</Filter>
+    </ClInclude>
+    <ClInclude Include="gorder\Graph.h">
+      <Filter>Header Files\Gorder</Filter>
+    </ClInclude>
+    <ClInclude Include="gorder\UnitHeap.h">
+      <Filter>Header Files\Gorder</Filter>
+    </ClInclude>
+    <ClInclude Include="openVCB.hh">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="openVCBExpr.hh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="openVCB_VMem.hh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils.hh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="bitroutines.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+  </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="MyManifest.manifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="badidea.asm">
+      <Filter>Source Files\Rejects</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
+    <None Include="cpp.hint" />
   </ItemGroup>
 </Project>
