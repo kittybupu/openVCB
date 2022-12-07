@@ -1,184 +1,243 @@
+// ReSharper disable CppTooWideScopeInitStatement
+// ReSharper disable StringLiteralTypo
+// ReSharper disable CppClangTidyCertErr33C
+#include "openVCB.hh"
+#include "openVCBExpr.hh"
 
-#include "openVCB.h"
-#include "openVCBExpr.h"
-#include <fstream>
+#include <array>
+
+#if defined _WIN64
+typedef long long ssize_t;
+#elif defined _WIN32
+typedef int ssize_t;
+#endif
 
 namespace openVCB {
-	using namespace std;
-	using namespace glm;
+/****************************************************************************************/
 
-	bool prefix(const char* str, const char* pre) {
-		return strncmp(pre, str, strlen(pre)) == 0;
-	}
 
-	string getNext(char* buff, int& pos) {
-		while (buff[pos] == ' ' || buff[pos] == '\t') pos++;
-		char* ptr = strchr(buff + pos, ' ');
-		char* tab = strchr(buff + pos, '\t');
-		if (ptr == nullptr || (tab != nullptr && tab < ptr))
-			ptr = tab;
-		if (!ptr) {
-			string res = string(buff + pos);
-			pos = -1;
-			return res;
-		}
-		else {
-			string res = string(buff + pos, ptr);
-			while (*ptr == ' ' || *ptr == '\t') ptr++;
-			pos = ptr - buff;
-			return res;
-		}
-	}
-
-	string getNextLine(char* buff, int& pos, int& lineNum) {
-		while (buff[pos] && (buff[pos] == ' ' || buff[pos] == '\t' || buff[pos] == ';' || buff[pos] == '\n')) {
-			pos++;
-			if (buff[pos] == '\n') lineNum++;
-		}
-		int start = pos;
-		int end = -1;
-		while (buff[pos] && buff[pos] != '\n' && buff[pos] != ';') {
-			if (end < 0 && buff[pos] == '#') end = pos;
-			pos++;
-		}
-		if (buff[pos] == '\n') lineNum++;
-		if (end < 0) end = pos;
-		return string(buff + start, buff + end);
-	}
-
-	void Project::assembleVmem(char* err) {
-		if (!vmem) return;
-		lineNumbers.clear();
-
-		char errBuff[512];
-		// printf("%s\n", assembly.c_str());
-
-		// Scan through everything once to obtain values for labels
-		assemblySymbols.clear();
-		int loc = 1;
-		int lineLoc = 0;
-		int lineNum = 0;
-		char* asmBuffer = (char*)assembly.c_str();
-		while (lineLoc != assembly.size()) {
-			// Read a line in.
-			string line = getNextLine(asmBuffer, lineLoc, lineNum);
-			if (line.size() == 0) continue;
-			char* buff = (char*)line.c_str();
-			// printf("Line: %s\n", buff);
-
-			// Parse this stuff
-			if (prefix(buff, "symbol") || prefix(buff, "resymb")) {}
-			else if (prefix(buff, "unsymb")) {}
-			else if (prefix(buff, "unpoint")) {}
-			else if (prefix(buff, "pointer") || prefix(buff, "repoint")) {
-				int k = 7;
-				string label = getNext(buff, k);
-				string addr = getNext(buff, k);
-				if (addr == "inline") loc++;
-			}
-			else if (buff[0] == '@') {
-				int k = 1;
-				string label = getNext(buff, k);
-				assemblySymbols[label] = loc;
-			}
-			else if (prefix(buff, "bookmark")) {}
-			else if (prefix(buff, "sub_bookmark")) {}
-			else loc++;
-		}
-
-		// Scan through everything again to assemble
-		loc = 1;
-		lineLoc = 0;
-		lineNum = 0;
-		while (lineLoc != assembly.size()) {
-			int lNum = lineNum;
-			// Read a line in.
-			string line = getNextLine(asmBuffer, lineLoc, lineNum);
-			if (line.size() == 0) continue;
-
-			char* buff = (char*)line.c_str();
-			errBuff[0] = 0;
-
-			// printf("Line: %s\n", buff);
-
-			// Parse this stuff
-			if (prefix(buff, "symbol") || prefix(buff, "resymb")) {
-				int k = 6;
-				string label = getNext(buff, k);
-				auto val = evalExpr(buff + k, assemblySymbols, errBuff);
-				assemblySymbols[label] = val;
-			}
-			else if (prefix(buff, "unsymb")) {
-				int k = 6;
-				string label = getNext(buff, k);
-				assemblySymbols.erase(label);
-			}
-			else if (prefix(buff, "pointer") || prefix(buff, "repoint")) {
-				int k = 7;
-				string label = getNext(buff, k);
-				string addr = getNext(buff, k);
-				auto addrVal = addr == "inline" ? loc++ : evalExpr(addr.c_str(), assemblySymbols, errBuff);
-				auto val = evalExpr(buff + k, assemblySymbols, errBuff);
-
-				addrVal = addrVal % vmemSize;
-				assemblySymbols[label] = addrVal;
-				vmem[addrVal] = val;
-				lineNumbers[addrVal] = lNum;
-			}
-			else if (prefix(buff, "unpoint")) {
-				int k = 7;
-				string label = getNext(buff, k);
-				assemblySymbols.erase(label);
-			}
-			else if (buff[0] == '@') {}
-			else if (prefix(buff, "bookmark")) {}
-			else if (prefix(buff, "sub_bookmark")) {}
-			else {
-				auto val = evalExpr(buff, assemblySymbols, errBuff);
-
-				// printf("%s (0x%08x=0x%08x)\n", buff, loc, val);
-				auto addrVal = (loc++) % vmemSize;
-				vmem[addrVal] = val;
-				lineNumbers[addrVal] = lNum;
-			}
-
-			if (*errBuff)
-				sprintf(err, "line %d: %s", lineNum, errBuff);
-
-			if (loc >= vmemSize) {
-				if (err) strcpy_s(err, 256, "VMem exceeded.");
-				break;
-			}
-		}
-
-		// Set VMem latch ids
-		for (int i = 0; i < vmAddr.numBits; i++) {
-			ivec2 pos = vmAddr.pos + i * vmAddr.stride;
-			vmAddr.gids[i] = indexImage[pos.x + pos.y * width];
-			if (vmAddr.gids[i] == -1 ||
-				setOff((Logic)states[vmAddr.gids[i]].logic) != Logic::LatchOff) {
-				printf("error: No address latch at VMem position %d %d\n", pos.x, pos.y);
-				exit(-1);
-			}
-		}
-		for (int i = 0; i < vmData.numBits; i++) {
-			ivec2 pos = vmData.pos + i * vmData.stride;
-			vmData.gids[i] = indexImage[pos.x + pos.y * width];
-			if (vmAddr.gids[i] == -1 ||
-				setOff((Logic)states[vmData.gids[i]].logic) != Logic::LatchOff) {
-				printf("error: No data latch at VMem position %d %d\n", pos.x, pos.y);
-				exit(-1);
-			}
-		}
-
-		// dumpVMemToText("vmemDump.bin");
-	}
-
-	void Project::dumpVMemToText(string p) {
-		FILE* file;
-		fopen_s(&file, p.c_str(), "w");
-		for (size_t i = 0; i < vmemSize; i++)
-			fprintf(file, "a: 0x%08x = 0x%08x\n", i, vmem[i]);
-		fclose(file);
-	}
+template <size_t N>
+static constexpr bool
+prefix(char const *str, char const (&pre)[N])
+{
+      return strncmp(pre, str, N - 1) == 0;
 }
+
+static std::string
+getNext(char *buf, size_t &pos)
+{
+      while (buf[pos] == ' ' || buf[pos] == '\t')
+            pos++;
+      char *ptr = strchr(buf + pos, ' ');
+      char *tab = strchr(buf + pos, '\t');
+
+      if (ptr == nullptr || (tab != nullptr && tab < ptr))
+            ptr = tab;
+
+      if (!ptr) {
+            // XXX Does this really need to be a copy?
+            auto res = std::string(buf + pos);
+            pos      = -1;
+            return res;
+      }
+
+      // XXX This too: wouldn't a string view work?
+      auto res = std::string(buf + pos, ptr);
+      while (*ptr == ' ' || *ptr == '\t')
+            ++ptr;
+      pos = ptr - buf;
+
+      return res;
+}
+
+static std::string
+getNextLine(char const *buf, size_t &pos, size_t &lineNum)
+{
+      while (buf[pos] && (isspace(buf[pos]) || buf[pos] == ';'))
+            if (buf[pos++] == '\n')
+                  ++lineNum;
+
+      size_t const start = pos;
+      ssize_t      end   = -1;
+
+      while (buf[pos] && buf[pos] != '\n' && buf[pos] != ';') {
+            if (end < 0 && buf[pos] == '#')
+                  end = static_cast<ssize_t>(pos);
+            ++pos;
+      }
+
+      if (buf[pos] == '\n')
+            ++lineNum;
+      if (end < 0)
+            end = static_cast<ssize_t>(pos);
+
+      // XXX Again here, must this be a copy?
+      return {buf + start, buf + end};
+}
+
+
+/*--------------------------------------------------------------------------------------*/
+
+
+void
+Project::assembleVmem(char *errp, size_t errSize)
+{
+      if (!vmem.i)
+            return;
+      lineNumbers.clear();
+      char errBuf[512];
+
+      // Scan through everything once to obtain values for labels
+      assemblySymbols.clear();
+      size_t loc       = 1;
+      size_t lineLoc   = 0;
+      size_t lineNum   = 0;
+      char const *asmBuffer = assembly.data();
+
+      while (lineLoc < assembly.size())
+      {
+            // Read a line in.
+            std::string line = getNextLine(asmBuffer, lineLoc, lineNum);
+            if (line.empty())
+                  continue;
+            char *buf = line.data();
+
+            // Parse this stuff
+            if (prefix(buf, "symbol") || prefix(buf, "resymb")) {
+            } else if (prefix(buf, "unsymb")) {
+            } else if (prefix(buf, "unpoint")) {
+            } else if (prefix(buf, "pointer") || prefix(buf, "repoint")) {
+                  size_t k = 7;
+                  std::string label = getNext(buf, k);
+                  std::string addr  = getNext(buf, k);
+                  if (addr == "inline")
+                        ++loc;
+            }
+            else if (buf[0] == '@') {
+                  size_t k = 1;
+                  std::string label      = getNext(buf, k);
+                  assemblySymbols[label] = loc;
+            }
+            else if (prefix(buf, "bookmark")) {
+            } else if (prefix(buf, "sub_bookmark")) {
+            } else {
+                  ++loc;
+            }
+      }
+
+      // Scan through everything again to assemble
+      loc     = 1;
+      lineLoc = 0;
+      lineNum = 0;
+
+      while (lineLoc != assembly.size()) {
+            size_t lNum = lineNum;
+            // Read a line in.
+            std::string line = getNextLine(asmBuffer, lineLoc, lineNum);
+            if (line.empty())
+                  continue;
+
+            char *buf = line.data();
+            errBuf[0] = '\0';
+
+            // Parse this stuff
+            if (prefix(buf, "symbol") || prefix(buf, "resymb")) {
+                  size_t k = 6;
+                  std::string label = getNext(buf, k);
+                  auto val = evalExpr(buf + k, assemblySymbols, errBuf);
+                  assemblySymbols[label] = val;
+            }
+            else if (prefix(buf, "unsymb")) {
+                  size_t k = 6;
+                  std::string label = getNext(buf, k);
+                  assemblySymbols.erase(label);
+            }
+            else if (prefix(buf, "pointer") || prefix(buf, "repoint")) {
+                  size_t k = 7;
+                  std::string label   = getNext(buf, k);
+                  std::string addr    = getNext(buf, k);
+
+                  auto addrVal = addr == "inline"
+                                     ? loc++
+                                     : evalExpr(addr.c_str(), assemblySymbols, errBuf);
+                  auto val     = evalExpr(buf + k, assemblySymbols, errBuf);
+
+                  addrVal                = addrVal % vmemSize;
+                  assemblySymbols[label] = addrVal;
+                  vmem.i[addrVal]        = val;
+                  lineNumbers[addrVal]   = lNum;
+            }
+            else if (prefix(buf, "unpoint")) {
+                  size_t k = 7;
+                  std::string label = getNext(buf, k);
+                  assemblySymbols.erase(label);
+            } else if (buf[0] == '@') {
+                  /* TODO */
+            } else if (prefix(buf, "bookmark")) {
+                  /* TODO */
+            } else if (prefix(buf, "sub_bookmark")) {
+                  /* TODO */
+            } else {
+                  auto val = evalExpr(buf, assemblySymbols, errBuf);
+
+                  // printf("%s (0x%08x=0x%08x)\n", buf, loc, val);
+                  auto addrVal         = loc++ % vmemSize;
+                  vmem.i[addrVal]      = val;
+                  lineNumbers[addrVal] = lNum;
+            }
+
+            if (*errBuf)
+                  snprintf(errp, errSize, "line %zu: %s", lineNum, errBuf);
+
+            if (loc >= vmemSize) {
+                  if (errp)
+                        std::ranges::copy("VMem exceeded.", errp);
+                  break;
+            }
+      }
+
+      std::pair<LatchInterface &, char const *> latchWrapper[] = {
+          {vmAddr, "address"},
+          {vmData, "data"   }
+      };
+
+      // Set VMem latch ids with mostly pointless but nifty c++ features.
+      for (auto &[data, msg] : latchWrapper)
+      {
+            for (int i = 0; i < data.numBits; ++i) {
+                  glm::ivec2 pos = data.pos + i * data.stride;
+                  data.gids[i]   = indexImage[pos.x + pos.y * width];
+
+                  if (data.gids[i] == -1 ||
+                      setOff(states[data.gids[i]].logic) != Logic::LatchOff)
+                  {
+                        ::printf("error: No %s latch at VMem position %d %d\n",
+                                 msg, pos.x, pos.y);
+                        ::exit(1);
+                  }
+            }
+      }
+
+      // dumpVMemToText("vmemDump.bin");
+}
+
+void
+Project::dumpVMemToText(std::string const &p) const
+{
+      FILE *file = ::fopen(p.c_str(), "w");
+
+      if (!file) {
+            auto const e = std::system_error{errno, std::generic_category()};
+            std::cerr << "Error opening file \"" << p
+                      << "\" for VMem dumping: " << e.what() << '\n';
+            return;
+      }
+
+      for (size_t i = 0; i < vmemSize; ++i)
+            ::fprintf(file, "a: 0x%08zx = 0x%08x\n", i, vmem.i[i]);
+      ::fclose(file);
+}
+
+
+/****************************************************************************************/
+} // namespace openVCB

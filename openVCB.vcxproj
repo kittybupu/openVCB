@@ -1,9 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="ClangRelease|Win32">
+      <Configuration>ClangRelease</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ClangRelease|x64">
+      <Configuration>ClangRelease</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="oneAPIRelease|Win32">
+      <Configuration>oneAPIRelease</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="oneAPIRelease|x64">
+      <Configuration>oneAPIRelease</Configuration>
+      <Platform>x64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Win32">
       <Configuration>Release</Configuration>
@@ -39,21 +55,60 @@
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ClangRelease|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>PGOptimize</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>ClangCL</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>Intel C++ Compiler 2022</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <UseIntelIPP1A>true</UseIntelIPP1A>
+    <UseInteloneTBB>true</UseInteloneTBB>
+    <InstrumentInteloneTBB>false</InstrumentInteloneTBB>
+    <UseInteloneMKL>Parallel</UseInteloneMKL>
+    <UseILP64Interfaces1A>false</UseILP64Interfaces1A>
+    <EnableMKLOpenMPOffloadToGPU>true</EnableMKLOpenMPOffloadToGPU>
+    <ProfileGuidedOptimization>Disabled</ProfileGuidedOptimization>
+    <InterproceduralOptimization>true</InterproceduralOptimization>
+    <BasePlatformToolset>v143</BasePlatformToolset>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
   </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
@@ -63,10 +118,22 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ClangRelease|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -76,11 +143,28 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ClangRelease|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <CopyCppRuntimeToOutputDir>true</CopyCppRuntimeToOutputDir>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnabled>true</VcpkgEnabled>
+    <VcpkgAutoLink>false</VcpkgAutoLink>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -108,36 +192,17 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <Profile>true</Profile>
     </Link>
   </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp17</LanguageStandard>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <OpenMPSupport>true</OpenMPSupport>
-    </ClCompile>
-    <Link>
-      <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ClangRelease|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp17</LanguageStandard>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <OpenMPSupport>true</OpenMPSupport>
-      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <OpenMP>GenerateParallelCode</OpenMP>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -146,27 +211,351 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>MAIN_PACKAGE_NAMESPACE=ocv;WIN32;HAVE_CONFIG_H;WIN32_LEAN_AND_MEAN;NOMINMAX;_WINDOWS;_WIN32_WINNT=0x0A00;_STL_WIN32_WINNT=0x0A00;__NO_BYPASS_SAL=0;_CRT_NONSTDC_NO_DEPRECATE;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <OpenMPSupport>true</OpenMPSupport>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <DiagnosticsFormat>Caret</DiagnosticsFormat>
+      <UseStandardPreprocessor>true</UseStandardPreprocessor>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <AdditionalOptions>/Zc:__cplusplus /utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.hh</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
+      <SupportJustMyCode>true</SupportJustMyCode>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <EnableFiberSafeOptimizations />
+      <AdditionalIncludeDirectories>$(ProjectDir);$(VcpkgRoot)\installed\$(VcpkgTriplet)\include;$(VcpkgRoot)\installed\$(VcpkgTriplet)\include\antlr4-runtime;$(ProjectDir)parse\gen\VCBasmLex;$(ProjectDir)parse\gen\VCBasmParse;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
+      <EnableParallelCodeGeneration>
+      </EnableParallelCodeGeneration>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <OptimizeReferences>false</OptimizeReferences>
+      <AdditionalDependencies>WS2_32.lib;D:\VCPKG\installed\x64-windows\debug\lib\zstd.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>MAIN_PACKAGE_NAMESPACE=ocv;WIN32;HAVE_CONFIG_H;WIN32_LEAN_AND_MEAN;NOMINMAX;_WINDOWS;_WIN32_WINNT=0x0A00;_STL_WIN32_WINNT=0x0A00;__NO_BYPASS_SAL=0;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <OpenMPSupport>true</OpenMPSupport>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OpenMP>GenerateParallelCode</OpenMP>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <DiagnosticsFormat>Caret</DiagnosticsFormat>
+      <UseStandardPreprocessor>true</UseStandardPreprocessor>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <ControlFlowGuard>
+      </ControlFlowGuard>
+      <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.hh</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <EnableParallelCodeGeneration>
+      </EnableParallelCodeGeneration>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <OmitFramePointers>true</OmitFramePointers>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(VcpkgRoot)\installed\$(VcpkgTriplet)\include;$(VcpkgRoot)\installed\$(VcpkgTriplet)\include\antlr4-runtime;$(ProjectDir)parse\gen\VCBasmLex;$(ProjectDir)parse\gen\VCBasmParse;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <AdditionalDependencies>$(VcpkgRoot)\installed\$(VcpkgTriplet)\lib\antlr4-runtime.lib;WS2_32.lib;D:\VCPKG\installed\x64-windows\lib\zstd.lib;;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <Profile>false</Profile>
+      <NoEntryPoint>
+      </NoEntryPoint>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>MAIN_PACKAGE_NAMESPACE=ocv;WIN32;HAVE_CONFIG_H;WIN32_LEAN_AND_MEAN;NOMINMAX;_WINDOWS;_WIN32_WINNT=0x0A00;_STL_WIN32_WINNT=0x0A00;__NO_BYPASS_SAL=0;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <OpenMPSupport>true</OpenMPSupport>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OpenMP>GenerateParallelCode</OpenMP>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <DiagnosticsFormat>Caret</DiagnosticsFormat>
+      <UseStandardPreprocessor>true</UseStandardPreprocessor>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <AdditionalOptions>/Zc:__cplusplus /clang:-mtune=native /clang:-march=native /clang:-Ofast /clang:-fvectorize /clang:-fslp-vectorize /clang:-flto=full /clang:-fuse-ld=lld /clang:-mprefer-vector-width=256 /clang:-Wl,--lto-O3 -Qunused-arguments -openmp %(AdditionalOptions)</AdditionalOptions>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <ControlFlowGuard>
+      </ControlFlowGuard>
+      <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.hh</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
+      <EnableFiberSafeOptimizations>
+      </EnableFiberSafeOptimizations>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <EnableParallelCodeGeneration>
+      </EnableParallelCodeGeneration>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(VcpkgRoot)\installed\$(VcpkgTriplet)\include;$(VcpkgRoot)\installed\$(VcpkgTriplet)\include\antlr4-runtime;$(ProjectDir)parse\gen\VCBasmLex;$(ProjectDir)parse\gen\VCBasmParse;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <OmitFramePointers>true</OmitFramePointers>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <AdditionalDependencies>$(VcpkgRoot)\installed\$(VcpkgTriplet)\lib\antlr4-runtime.lib;libomp.lib;WS2_32.lib;D:\VCPKG\installed\x64-windows\lib\tbb12.lib;D:\VCPKG\installed\x64-windows\lib\zstd.lib;user32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>MAIN_PACKAGE_NAMESPACE=ocv;WIN32;HAVE_CONFIG_H;WIN32_LEAN_AND_MEAN;NOMINMAX;_WINDOWS;_WIN32_WINNT=0x0A00;_STL_WIN32_WINNT=0x0A00;__NO_BYPASS_SAL=0;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <OpenMPSupport>true</OpenMPSupport>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OpenMP>GenerateParallelCode</OpenMP>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <DiagnosticsFormat>Caret</DiagnosticsFormat>
+      <UseStandardPreprocessor>true</UseStandardPreprocessor>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <AdditionalOptions>/Zc:__cplusplus -Qiopenmp /clang:-mtune=native /clang:-march=native /clang:-Ofast /clang:-fvectorize /clang:-fslp-vectorize /clang:-mprefer-vector-width=256 /clang:-Wall /clang:-Wextra /clang:-Werror=format /clang:-Wno-macro-redefined /clang:-Wno-char-subscripts /clang:-Werror=sign-compare /clang:-masm=intel %(AdditionalOptions)</AdditionalOptions>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <ControlFlowGuard>false</ControlFlowGuard>
+      <AssemblerOutput>AssemblyAndMachineCode</AssemblerOutput>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.hh</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
+      <EnableFiberSafeOptimizations>
+      </EnableFiberSafeOptimizations>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <EnableParallelCodeGeneration>
+      </EnableParallelCodeGeneration>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(VcpkgRoot)\installed\$(VcpkgTriplet)\include;$(VcpkgRoot)\installed\$(VcpkgTriplet)\include\antlr4-runtime;$(ProjectDir)parse\gen\VCBasmLex;$(ProjectDir)parse\gen\VCBasmParse;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <OmitFramePointers>true</OmitFramePointers>
+      <Optimization>MaxSpeedHighLevel</Optimization>
+      <UseProcessorExtensions>HOST</UseProcessorExtensions>
+      <OptimizationDiagnosticLevel>
+      </OptimizationDiagnosticLevel>
+      <EmitOptimizationDiagnosticsToFile>
+      </EmitOptimizationDiagnosticsToFile>
+      <OpenMPOffloading>None</OpenMPOffloading>
+      <CCppSupport>Cpp20Support</CCppSupport>
+      <EnableSyclOffload>false</EnableSyclOffload>
+      <FSYCLEarlyOptimizations>Default</FSYCLEarlyOptimizations>
+      <FSYCLDeadArgsOptimization>Default</FSYCLDeadArgsOptimization>
+      <FSYCLUnnamedLambda>Default</FSYCLUnnamedLambda>
+      <SpecifySyclTargets>
+      </SpecifySyclTargets>
+      <SYCLShowVerboseInformation>true</SYCLShowVerboseInformation>
+      <StringPooling>
+      </StringPooling>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <AdditionalDependencies>$(VcpkgRoot)\installed\$(VcpkgTriplet)\lib\antlr4-runtime.lib;WS2_32.lib;D:\VCPKG\installed\x64-windows\lib\zstd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <WPOAssemblyOutput>Asm_and_MachineCode</WPOAssemblyOutput>
+      <SYCLShowVerboseInformation>false</SYCLShowVerboseInformation>
+      <Profile>
+      </Profile>
+      <SpecifyCPUTargetForAOT>Default</SpecifyCPUTargetForAOT>
+      <SpecifyGPUTargetForAOT>Default</SpecifyGPUTargetForAOT>
+      <EnableLinkDeviceLibraries>all</EnableLinkDeviceLibraries>
+      <ShowProgress>
+      </ShowProgress>
+      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="gorder\Graph.cpp" />
-    <ClCompile Include="gorder\UnitHeap.cpp" />
-    <ClCompile Include="gorder\Util.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="openVCB.cpp" />
-    <ClCompile Include="openVCBAssembler.cpp" />
-    <ClCompile Include="openVCBBlueprint.cpp" />
-    <ClCompile Include="openVCBExpr.cpp" />
-    <ClCompile Include="openVCBPreprocessing.cpp" />
-    <ClCompile Include="openVCBReader.cpp" />
-    <ClCompile Include="openVCBSim.cpp" />
+    <ClCompile Include="cSharpExportInterface.cpp">
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">pch.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'">pch.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">pch.hh</PrecompiledHeaderFile>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">/clang:-std=c++20 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <ClCompile Include="dllmain.cc">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gorder\Graph.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gorder\UnitHeap.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="gorder\Util.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="openVCB.cpp">
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">pch.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'">pch.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">pch.hh</PrecompiledHeaderFile>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">/clang:-std=c++20 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <ClCompile Include="openVCBAssembler.cpp">
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">pch.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'">pch.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">pch.hh</PrecompiledHeaderFile>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">/clang:-std=c++20 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <ClCompile Include="openVCBBlueprint.cpp">
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">pch.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'">pch.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">pch.hh</PrecompiledHeaderFile>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">/clang:-std=c++20 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <ClCompile Include="openVCBExpr.cpp">
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">pch.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'">pch.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">pch.hh</PrecompiledHeaderFile>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">/clang:-std=c++20 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <ClCompile Include="openVCBPreprocessing.cpp">
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">pch.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'">pch.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">pch.hh</PrecompiledHeaderFile>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">/clang:-std=c++20 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <ClCompile Include="openVCBReader.cpp">
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">pch.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'">pch.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">pch.hh</PrecompiledHeaderFile>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">/clang:-std=c++20 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <ClCompile Include="openVCBSim.cpp">
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">pch.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'">pch.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">pch.hh</PrecompiledHeaderFile>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">/clang:-std=c++20 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gorder\Graph.h" />
     <ClInclude Include="gorder\UnitHeap.h" />
     <ClInclude Include="gorder\Util.h" />
-    <ClInclude Include="openVCB.h" />
-    <ClInclude Include="openVCBExpr.h" />
+    <ClInclude Include="openVCB.hh" />
+    <ClInclude Include="openVCBExpr.hh" />
+    <ClInclude Include="openVCB_Data.hh" />
+    <ClInclude Include="openVCB_VMem.hh" />
+    <ClInclude Include="Utils.hh" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="badidea.asm">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nasm -Xvc -Wall -g -fwin64 %(FullPath) -o $(OutputPath)%(Filename).obj</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutputPath)%(Filename).obj</Outputs>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Object</OutputItemType>
+      <BuildInParallel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</BuildInParallel>
+      <Command Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'">nasm -Xvc -Wall -g -fwin64 %(FullPath) -o $(OutputPath)%(Filename).obj</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">nasm -Xvc -Wall -g -fwin64 %(FullPath) -o $(OutputPath)%(Filename).obj</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'">$(OutputPath)%(Filename).obj</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">$(OutputPath)%(Filename).obj</Outputs>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'">Object</OutputItemType>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">Object</OutputItemType>
+      <BuildInParallel Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'">true</BuildInParallel>
+      <BuildInParallel Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">true</BuildInParallel>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nasm -Xvc -Wall -g -fwin64 %(FullPath) -o $(OutputPath)%(Filename).obj</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutputPath)%(Filename).obj</Outputs>
+      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Object</OutputItemType>
+      <BuildInParallel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</BuildInParallel>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="bitroutines.asm">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </MASM>
+  </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="MyManifest.manifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
+    <None Include="cpp.hint" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
   </ImportGroup>
 </Project>
