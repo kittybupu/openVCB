@@ -231,7 +231,7 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>MAIN_PACKAGE_NAMESPACE=ocv;WIN32;HAVE_CONFIG_H;WIN32_LEAN_AND_MEAN;NOMINMAX;_WINDOWS;_WIN32_WINNT=0x0A00;_STL_WIN32_WINNT=0x0A00;__NO_BYPASS_SAL=0;_CRT_NONSTDC_NO_DEPRECATE;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>MAIN_PACKAGE_NAMESPACE=openVCB;WIN32;HAVE_CONFIG_H;WIN32_LEAN_AND_MEAN;NOMINMAX;_WINDOWS;_WIN32_WINNT=0x0A00;_STL_WIN32_WINNT=0x0A00;__NO_BYPASS_SAL=0;_CRT_NONSTDC_NO_DEPRECATE;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -267,7 +267,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>MAIN_PACKAGE_NAMESPACE=ocv;WIN32;HAVE_CONFIG_H;WIN32_LEAN_AND_MEAN;NOMINMAX;_WINDOWS;_WIN32_WINNT=0x0A00;_STL_WIN32_WINNT=0x0A00;__NO_BYPASS_SAL=0;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>MAIN_PACKAGE_NAMESPACE=openVCB;WIN32;HAVE_CONFIG_H;WIN32_LEAN_AND_MEAN;NOMINMAX;_WINDOWS;_WIN32_WINNT=0x0A00;_STL_WIN32_WINNT=0x0A00;__NO_BYPASS_SAL=0;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -314,7 +314,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>MAIN_PACKAGE_NAMESPACE=ocv;WIN32;HAVE_CONFIG_H;WIN32_LEAN_AND_MEAN;NOMINMAX;_WINDOWS;_WIN32_WINNT=0x0A00;_STL_WIN32_WINNT=0x0A00;__NO_BYPASS_SAL=0;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>MAIN_PACKAGE_NAMESPACE=openVCB;WIN32;HAVE_CONFIG_H;WIN32_LEAN_AND_MEAN;NOMINMAX;_WINDOWS;_WIN32_WINNT=0x0A00;_STL_WIN32_WINNT=0x0A00;__NO_BYPASS_SAL=0;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -359,7 +359,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>MAIN_PACKAGE_NAMESPACE=ocv;WIN32;HAVE_CONFIG_H;WIN32_LEAN_AND_MEAN;NOMINMAX;_WINDOWS;_WIN32_WINNT=0x0A00;_STL_WIN32_WINNT=0x0A00;__NO_BYPASS_SAL=0;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>MAIN_PACKAGE_NAMESPACE=openVCB;WIN32;HAVE_CONFIG_H;WIN32_LEAN_AND_MEAN;NOMINMAX;_WINDOWS;_WIN32_WINNT=0x0A00;_STL_WIN32_WINNT=0x0A00;__NO_BYPASS_SAL=0;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -369,7 +369,7 @@
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
-      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions512</EnableEnhancedInstructionSet>
       <AdditionalOptions>/Zc:__cplusplus -Qiopenmp /clang:-mtune=native /clang:-march=native /clang:-Ofast /clang:-fvectorize /clang:-fslp-vectorize /clang:-mprefer-vector-width=256 /clang:-Wall /clang:-Wextra /clang:-Werror=format /clang:-Wno-macro-redefined /clang:-Wno-char-subscripts /clang:-Werror=sign-compare /clang:-masm=intel %(AdditionalOptions)</AdditionalOptions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <ControlFlowGuard>false</ControlFlowGuard>
@@ -508,7 +508,7 @@
     <ClInclude Include="gorder\Graph.h" />
     <ClInclude Include="gorder\UnitHeap.h" />
     <ClInclude Include="gorder\Util.h" />
-    <ClInclude Include="openVCB.hh" />
+    <ClInclude Include="openVCB.h" />
     <ClInclude Include="openVCBExpr.hh" />
     <ClInclude Include="openVCB_Data.hh" />
     <ClInclude Include="openVCB_VMem.hh" />
@@ -541,10 +541,10 @@
   </ItemGroup>
   <ItemGroup>
     <MASM Include="bitroutines.asm">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='oneAPIRelease|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ClangRelease|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </MASM>
   </ItemGroup>
   <ItemGroup>
@@ -553,6 +553,7 @@
   <ItemGroup>
     <None Include="ClassDiagram.cd" />
     <None Include="cpp.hint" />
+    <None Include="vcbasm.y" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

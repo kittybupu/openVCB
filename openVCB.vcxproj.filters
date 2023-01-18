@@ -77,7 +77,7 @@
     <ClInclude Include="gorder\UnitHeap.h">
       <Filter>Header Files\Gorder</Filter>
     </ClInclude>
-    <ClInclude Include="openVCB.hh">
+    <ClInclude Include="openVCB.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="openVCBExpr.hh">
@@ -106,5 +106,8 @@
   <ItemGroup>
     <None Include="ClassDiagram.cd" />
     <None Include="cpp.hint" />
+    <None Include="vcbasm.y">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
