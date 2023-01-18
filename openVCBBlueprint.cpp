@@ -1,4 +1,4 @@
-#include "openVCB.hh"
+#include "openVCB.h"
 
 
 namespace openVCB {

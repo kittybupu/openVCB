@@ -1,8 +1,15 @@
 
-#include "openVCB.hh"
+#include "openVCB.h"
 #include <chrono>
 #include <memory>
 #include <vector>
+
+#ifndef STRINGIZE
+#  define STRINGIZE_HELPER(x) #x
+#  define STRINGIZE(x)        STRINGIZE_HELPER(x)
+#endif
+#define UINT64_CAST_HELPER(x) UINT64_C(x)
+#define UINT64_CAST(x)        UINT64_CAST_HELPER(x)
 
 #if __cplusplus < 202002L || _MSVC_LANG < 202002L
 # error "Wrong version clang, you moron."
@@ -10,29 +17,40 @@
 
 namespace lazy {
 
-using clock = std::chrono::high_resolution_clock;
+template <typename T> concept HasDuration = requires { typename T::duration; };
+template <typename T> concept HasRep      = requires { typename T::rep; };
 
-struct tagged_time_point
+template <typename Tp>
+    requires HasDuration<Tp> && HasRep<Tp>
+class tagged_time_point
 {
-      using time_point = clock::time_point;
+      using this_type  = tagged_time_point<Tp>;
+      using time_point = Tp;
+      using duration   = typename Tp::duration;
+      using rep        = typename Tp::rep;
 
-      char const *const name;
-      time_point const  time;
+      static constexpr bool arith_ = std::is_arithmetic_v<rep>;
 
-      tagged_time_point(char const *aname, time_point const atime)
-          : name(aname), time(atime)
+      std::string_view name_{};
+      time_point const time_{};
+
+    public:
+      tagged_time_point() = default;
+      tagged_time_point(std::string_view const name, time_point time)
+          : name_(name), time_(std::move(time))
       {}
 
-      constexpr auto operator-(tagged_time_point const &other) const noexcept
+      template <typename T>
+      constexpr auto operator-(tagged_time_point<T> const &other) const noexcept(arith_ && other.arith_)
       {
-            return time - other.time;
+            return time_ - other.time_;
       }
 
-      template <typename Ty>
-      constexpr auto operator-(Ty const &other) const noexcept
-      {
-            return time - other;
-      }
+      ND constexpr std::string_view const &name()   const & noexcept { return name_; }
+      ND constexpr char const             *name_c() const   noexcept { return name_.data(); }
+
+      ND auto const &tp() const & noexcept { return time_; }
+      ND auto       &tp()       & noexcept { return time_; }
 };
 
 template <typename Ty>
@@ -51,37 +69,40 @@ constexpr auto fwrite_l(Elem const (&buf)[Num], FILE *dest)
 } // namespace lazy
 
 
-using namespace std::literals;
-static constexpr unsigned numTicks   = 10'000'000;
-static constexpr double   numTicks_d = numTicks;
+#define NUMTICKS   10'000'000
+#define NUMTICKS_S STRINGIZE(NUMTICKS)
 
+using namespace std::literals;
+static constexpr uint64_t numTicks   = UINT64_CAST(NUMTICKS);
+static constexpr double   numTicks_d = numTicks;
 
 int
 main()
 {
-      using namespace lazy;
+      using clock = std::chrono::high_resolution_clock;
+      using lazy::tagged_time_point, lazy::fwrite_l, lazy::dur_to_dbl;
 
       FILE *realStdout = stdout;
       auto  proj       = std::make_unique<openVCB::Project>();
-      auto  times      = std::vector<tagged_time_point>();
+      auto  times      = std::vector<tagged_time_point<clock::time_point>>();
       times.reserve(100);
 
       // Read .vcb file
-      times.emplace_back("File read", clock::now());
+      times.emplace_back("File read"sv, clock::now());
       proj->readFromVCB("sampleProject.vcb");
 
-      times.emplace_back("Project preprocess", clock::now());
+      times.emplace_back("Project preprocess"sv, clock::now());
       proj->preprocess();
 
-      times.emplace_back("VMem assembly", clock::now());
+      times.emplace_back("VMem assembly"sv, clock::now());
       proj->assembleVmem();
 
       ::printf("Loaded %d groups and %d connections.\n"
-               "Simulating %u ticks into the future...\n",
-               proj->numGroups, proj->writeMap.nnz, numTicks);
+               "Simulating " NUMTICKS_S " ticks into the future...\n",
+               proj->numGroups, proj->writeMap.nnz);
 
       // Advance 1 million ticks
-      times.emplace_back("Advance 1 million ticks", clock::now());
+      times.emplace_back("Advance " NUMTICKS_S " ticks", clock::now());
       proj->tick(numTicks);
 
       times.emplace_back("End", clock::now());
@@ -90,7 +111,7 @@ main()
 
       for (size_t i = 0; i < size - 1; ++i) {
             double const elapsed = dur_to_dbl(times[i + 1] - times[i]);
-            ::printf("%s took %.3f seconds.\n", times[i].name, elapsed);
+            ::printf("%s took %.3f seconds.\n", times[i].name_c(), elapsed);
       }
 
       double const simTime = dur_to_dbl(times[size - 1] - times[size - 2]);
@@ -98,4 +119,6 @@ main()
 
       proj->dumpVMemToText("vmemDump.txt");
       fwrite_l("Final VMem contents dumped to vmemDump.txt!\n", realStdout);
+
+      return 0;
 }

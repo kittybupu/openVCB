@@ -2,7 +2,7 @@
 #ifndef G1Gjjm08JMgUZALRqEUy6y5CngZGIr6L5gKrj321mPkr5Jds
 #define G1Gjjm08JMgUZALRqEUy6y5CngZGIr6L5gKrj321mPkr5Jds
 
-#include "openVCB.hh"
+#include "openVCB.h"
 
 namespace openVCB {
 
@@ -27,12 +27,24 @@ union VMemWrapper
       ND auto const &def() const & noexcept { return i; }
 #endif
 
+      //---------------------------------------------------------------------------------
+
       VMemWrapper() noexcept = default;
+
       VMemWrapper(uint32_t *ptr) noexcept : i(ptr) {}
       VMemWrapper(uint8_t *ptr)  noexcept : b(ptr) {}
       VMemWrapper(nullptr_t)     noexcept : i(nullptr) {}
 
       //---------------------------------------------------------------------------------
+
+      // Automatically use the default member when indexing.
+      ND auto const &operator[](size_t const idx) const & noexcept { return def()[idx]; }
+      ND auto       &operator[](size_t const idx)       & noexcept { return def()[idx]; }
+
+#if 0
+      ND auto const &operator*() const & noexcept { return *def(); }
+      ND auto       &operator*()       & noexcept { return *def(); }
+#endif
 
       // Assign pointers to the default union member.
       VMemWrapper &operator=(void *ptr) noexcept
@@ -56,28 +68,16 @@ union VMemWrapper
       }
 
       // Allow comparing with nullptr directly.
-      ND bool operator==(std::nullptr_t) const noexcept
+      ND bool constexpr operator==(std::nullptr_t) const noexcept
+      {
+            return def() == nullptr;
+      }
+
+      // Allow checking whether the pointer null by placing it in a boolean
+      // context just as if this were a bare pointer.
+      ND explicit constexpr operator bool() const noexcept
       {
             return def() != nullptr;
-      }
-
-      // Allow checking whether the pointer null by placing it in a boolean context
-      // just as if this were a bare pointer.
-      ND explicit operator bool() const noexcept
-      {
-            return def() != nullptr;
-      }
-
-      // Automatically use the default member when indexing.
-      ND auto const &operator[](size_t const idx) const & noexcept
-      {
-            return def()[idx];
-      }
-
-      // Automatically use the default member when indexing.
-      ND auto &operator[](size_t const idx) & noexcept
-      {
-            return def()[idx];
       }
 
       ND uint32_t *word_at_byte(size_t const offset) const noexcept
@@ -86,7 +86,8 @@ union VMemWrapper
       }
 };
 
-static_assert(sizeof(VMemWrapper) == sizeof(uintptr_t));
+static_assert(sizeof(VMemWrapper) == sizeof(void *));
+
 
 } // namespace openVCB
 #endif

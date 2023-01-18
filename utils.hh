@@ -52,44 +52,28 @@
  * Include all the things? No.
  */
 #include <algorithm>
-//#include <any>
-//#include <array>
+#include <array>
 #include <atomic>
 //#include <bit>
 //#include <bitset>
 #include <chrono>
-//#include <codecvt>
 #include <compare>
 #include <concepts>
 #include <condition_variable>
 //#include <exception>
 #include <filesystem>
 #include <forward_list>
-//#include <fstream>
-//#include <functional>
-//#include <future>
-//#include <iomanip>
-//#include <ios>
-//#include <iosfwd>
 #include <iostream>
-//#include <istream>
 #include <iterator>
 #include <limits>
 #include <list>
-//#include <locale>
 #include <map>
 #include <memory>
 #include <mutex>
-//#include <new>
-//#include <numbers>
-//#include <numeric>
-//#include <optional>
-//#include <ostream>
+#include <numbers>
+#include <numeric>
 #include <queue>
 #include <random>
-//#include <ratio>
-//#include <regex>
-//#include <scoped_allocator>
 #include <set>
 #include <span>
 #include <sstream>
@@ -106,7 +90,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
-//#include <valarray>
 #include <variant>
 #include <vector>
 
@@ -122,9 +105,10 @@
 #include <cstdlib>
 #include <cstring>
 
-inline namespace MAIN_PACKAGE_NAMESPACE {
+namespace MAIN_PACKAGE_NAMESPACE {
 using namespace std::literals;
 namespace util {
+
 template <typename T1>
 constexpr bool eq_any(T1 const &left, T1 const &right)
 {
@@ -136,6 +120,7 @@ constexpr bool eq_any(T1 const &left, T1 const &right, Types const &...rest)
 {
       return left == right || eq_any(left, rest...);
 }
+
 } // namespace util
 } // namespace MAIN_PACKAGE_NAMESPACE
 
@@ -187,7 +172,8 @@ constexpr bool eq_any(T1 const &left, T1 const &right, Types const &...rest)
 # endif
 #endif
 
-#if (defined __cplusplus      && __cplusplus >= 201703L)  || \
+#if (defined _HAS_CXX17)                                  || \
+    (defined __cplusplus      && __cplusplus >= 201703L)  || \
     (defined CXX_LANG_VER     && CXX_LANG_VER >= 201703L) || \
     (defined __STDC_VERSION__ && __STDC_VERSION__ > 201710L)
 # define UNUSED            [[maybe_unused]]
@@ -259,11 +245,11 @@ constexpr bool eq_any(T1 const &left, T1 const &right, Types const &...rest)
 #endif
 
 #ifndef __WORDSIZE
-# if SIZE_MAX == ULLONG_MAX
+# if SIZE_MAX == UINT64_MAX
 #  define __WORDSIZE 64
-# elif SIZE_MAX == UINT_MAX
+# elif SIZE_MAX == UINT32_MAX
 #  define __WORDSIZE 32
-# elif SIZE_MAX == SHRT_MAX
+# elif SIZE_MAX == UINT16_MAX
 #  error "This is the no 16-bit computers club, and we already have a PDP-11. You'll have to leave."
 # else
 #  error "I have no useful warning message to give here."

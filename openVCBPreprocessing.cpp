@@ -1,9 +1,8 @@
 // Code for image proprocessing and graph generation
 
 // ReSharper disable CppTooWideScopeInitStatement
-#include "openVCB.hh"
+#include "openVCB.h"
 
-#include <algorithm>
 #include <unordered_set>
 
 #ifdef OVCB_USE_GORDER
@@ -13,18 +12,6 @@
 
 
 namespace openVCB {
-
-constexpr glm::ivec2 fourNeighbors[4] = {
-      glm::ivec2(-1, 0), glm::ivec2(0,  1),
-      glm::ivec2( 1, 0), glm::ivec2(0, -1)
-};
-
-#if 0
-static void exploreBundle(glm::ivec2, int, InkPixel const *, int, int, std::vector<int> &,
-                          std::vector<glm::ivec2> &, std::vector<glm::ivec2> &,
-                          std::vector<glm::ivec2> &, std::vector<glm::ivec2> &);
-#endif
-
 
 struct Bundle
 {
@@ -58,90 +45,7 @@ struct Bundle
       Bundle &operator=(Bundle const &)     = delete;
       Bundle &operator=(Bundle &&) noexcept = delete;
 
-      //----------------------------------------------------------------------------------
-
-
-      void explore(glm::ivec2 const pos, int const mask) const
-      {
-            bundleStack.push_back(pos);
-            visited[pos.x + pos.y * width] |= mask;
-
-            while (!bundleStack.empty()) {
-                  auto const p = bundleStack.back();
-                  bundleStack.pop_back();
-
-                  // Check four directions
-                  for (auto const &neighbor : fourNeighbors)
-                  {
-                        glm::ivec2 np = p + neighbor;
-                        if (np.x < 0 || np.x >= width || np.y < 0 || np.y >= height)
-                              continue;
-
-                        int       nidx = np.x + np.y * width;
-                        int const nvis = visited[nidx];
-
-                        // Check if already visited
-                        if (nvis & mask)
-                              continue;
-
-                        InkPixel const &newPix = image[nidx];
-                        Ink             newInk = newPix.ink;
-
-                        // Handle different inks
-                        if (newInk == Ink::ReadOff) {
-                              if (nvis & 1)
-                                    continue;
-                              readInks.push_back(np);
-                              if ((mask >> 16) == 2) {
-                                    visited[nidx] |= 1;
-                                    stack.push_back(np);
-                              }
-                              continue;
-                        }
-
-                        if (newInk == Ink::WriteOff) {
-                              if (nvis & 1)
-                                    continue;
-                              writeInks.push_back(np);
-                              if ((mask >> 17) == 2) {
-                                    visited[nidx] |= 1;
-                                    stack.push_back(np);
-                              }
-                              continue;
-                        }
-
-                        if (newInk == Ink::TraceOff) {
-                              if (nvis & 1)
-                                    continue;
-                              // We will only connect to traces of the matching color
-                              if ((mask >> newPix.meta) == 2) {
-                                    visited[nidx] |= 1;
-                                    stack.push_back(np);
-                              }
-                              continue;
-                        }
-
-                        if (newInk == Ink::Cross) {
-                              np += neighbor;
-                              if (np.x < 0 || np.x > width || np.y < 0 || np.y > height)
-                                    continue;
-
-                              nidx = np.x + np.y * width;
-                              if (visited[nidx] & mask)
-                                    continue;
-                              newInk = image[np.x + np.y * width].ink;
-                        }
-
-                        if (newInk == Ink::BundleOff) {
-                              visited[nidx] |= mask;
-                              bundleStack.push_back(np);
-                        }
-                  }
-            }
-      }
-
-
-      //----------------------------------------------------------------------------------
+      void explore(glm::ivec2 pos, int mask) const;
 
     private:
       int const      &width;
@@ -155,41 +59,31 @@ struct Bundle
 };
 
 
-#if 0
-static void
-exploreBundle(glm::ivec2 const         pos, // XXX: Should be reference but I don't want to change signatures
-              int const                mask,
-              InkPixel const          *image,
-              int const                width,
-              int const                height,
-              std::vector<int>        &visited,
-              std::vector<glm::ivec2> &stack,
-              std::vector<glm::ivec2> &bundleStack,
-              std::vector<glm::ivec2> &readInks,
-              std::vector<glm::ivec2> &writeInks)
+void Bundle::explore(glm::ivec2 const pos, int const mask) const
 {
       bundleStack.push_back(pos);
       visited[pos.x + pos.y * width] |= mask;
 
       while (!bundleStack.empty()) {
-            glm::ivec2 const p = bundleStack.back();
+            auto const p = bundleStack.back();
             bundleStack.pop_back();
 
             // Check four directions
-            for (auto const &fourNeighbor : fourNeighbors)
+            for (auto const & neighbor : fourNeighbors)
             {
-                  glm::ivec2 np = p + fourNeighbor;
+                  glm::ivec2 np = p + neighbor;
                   if (np.x < 0 || np.x >= width || np.y < 0 || np.y >= height)
                         continue;
 
                   int       nidx = np.x + np.y * width;
                   int const nvis = visited[nidx];
+
                   // Check if already visited
                   if (nvis & mask)
                         continue;
 
-                  InkPixel newPix = image[nidx];
-                  Ink      newInk = newPix.ink;
+                  InkPixel const & newPix = image[nidx];
+                  Ink              newInk = newPix.ink;
 
                   // Handle different inks
                   if (newInk == Ink::ReadOff) {
@@ -202,6 +96,7 @@ exploreBundle(glm::ivec2 const         pos, // XXX: Should be reference but I do
                         }
                         continue;
                   }
+
                   if (newInk == Ink::WriteOff) {
                         if (nvis & 1)
                               continue;
@@ -212,6 +107,7 @@ exploreBundle(glm::ivec2 const         pos, // XXX: Should be reference but I do
                         }
                         continue;
                   }
+
                   if (newInk == Ink::TraceOff) {
                         if (nvis & 1)
                               continue;
@@ -222,8 +118,9 @@ exploreBundle(glm::ivec2 const         pos, // XXX: Should be reference but I do
                         }
                         continue;
                   }
+
                   if (newInk == Ink::Cross) {
-                        np += fourNeighbor;
+                        np += neighbor;
                         if (np.x < 0 || np.x > width || np.y < 0 || np.y > height)
                               continue;
 
@@ -240,14 +137,12 @@ exploreBundle(glm::ivec2 const         pos, // XXX: Should be reference but I do
             }
       }
 }
-#endif
 
+/*--------------------------------------------------------------------------------------*/
 
 void
 Project::preprocess()
 {
-      [[maybe_unused]] constexpr bool useGorder = false;
-
       // Turn off any inks that start as off
 #pragma omp parallel for schedule(static, 8192)
       for (int i = 0; i < width * height; ++i) {
@@ -307,7 +202,7 @@ Project::preprocess()
 
                   // Check what ink this group is of
                   Ink ink = image[x + y * width].ink;
-                  if (util::eq_any(ink, Ink::Cross , Ink::None , Ink::Annotation , Ink::Filler))
+                  if (util::eq_any(ink, Ink::None, Ink::Cross, Ink::Filler, Ink::Annotation))
                         continue;
                   if (ink == Ink::ReadOff) {
                         readInks.emplace_back(x, y);
@@ -359,11 +254,6 @@ Project::preprocess()
                                           continue;
 
                                     // Hold my beer, we're jumping in.
-#if 0
-                                    exploreBundle(np, mask, image, width, height,
-                                                  visited, stack, bundleStack,
-                                                  readInks, writeInks);
-#endif
                                     bundle_handler.explore(np, mask);
 
                                     if (nvis & 1) {
@@ -526,7 +416,7 @@ Project::preprocess()
 
 #ifdef OVCB_USE_GORDER
       // Gorder
-      if constexpr (useGorder) {
+      {
             Gorder::Graph g;
             std::vector   list(conList);
             g.readGraph(list, writeMap.n);
@@ -603,7 +493,7 @@ Project::preprocess()
             Ink ink = stateInks[i];
             if (ink == Ink::ClockOff)
                   clockGIDs.push_back(i);
-            else if (util::eq_any(ink, Ink::NotOff, Ink::NorOff, Ink::NandOff, Ink::XnorOff, Ink::Latch))
+            else if (util::eq_any(ink, Ink::NandOff, Ink::NotOff, Ink::NorOff, Ink::XnorOff, Ink::Latch))
                   updateQ[0][qSize++] = i;
             if (ink == Ink::Latch)
                   states[i].activeInputs = 1;

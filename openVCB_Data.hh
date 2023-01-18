@@ -140,5 +140,12 @@ constexpr uint32_t traceColors[] = {
 
 // clang-format on
 
+
+constexpr glm::ivec2 fourNeighbors[4] = {
+      glm::ivec2(-1, 0), glm::ivec2(0,  1),
+      glm::ivec2( 1, 0), glm::ivec2(0, -1)
+};
+
+
 } // namespace openVCB
 #endif

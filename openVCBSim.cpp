@@ -4,9 +4,12 @@
 
 // ReSharper disable CppTooWideScope
 // ReSharper disable CppTooWideScopeInitStatement
-#include "openVCB.hh"
+#include "openVCB.h"
+
+extern "C" void openVCB_evil_assembly_bit_manipulation_routine_setVMem(uint8_t *vmem, size_t addr, uint32_t data, int numBits);
 
 namespace openVCB {
+
 
 [[__gnu__::__hot__]]
 SimulationResult
@@ -49,13 +52,10 @@ Project::tick(int const numTicks, int64_t const maxEvents)
                         // Load address
                         lastVMemAddr  = addr;
 #ifdef OVCB_BYTE_ORIENTED_VMEM
-                        // Clang compiles this down to a very tidy handful of instructions.
-                        // In fact, it did better than I did writing assembly by hand.
                         uint32_t data = (vmem.b[addr]) | (vmem.b[addr+1]<<8) | (vmem.b[addr+2]<<16) | (vmem.b[addr+3]<<24);
 #else
                         uint32_t data = vmem.i[addr];
 #endif
-
                         // Turn on those latches
                         for (int k = 0; k < vmData.numBits; ++k) {
                               auto      &state = states[vmData.gids[k]];
@@ -82,8 +82,14 @@ Project::tick(int const numTicks, int64_t const maxEvents)
                         }
 
 #ifdef OVCB_BYTE_ORIENTED_VMEM
-                        auto *const tmp_ptr = vmem.word_at_byte(addr);
-                        *tmp_ptr = data | ((~UINT32_C(0) << vmData.numBits) & *tmp_ptr);
+                        uint32_t *const tmp_ptr = vmem.word_at_byte(addr);
+                        // If numBits is 32 then this shift does nothing, meaning data
+                        // will be ORed with all of *tmp_ptr. So avoid that.
+                        *tmp_ptr = vmData.numBits == 32
+                                       ? data
+                                       : data | ((UINT32_MAX << vmData.numBits) & *tmp_ptr);
+
+                        //openVCB_evil_assembly_bit_manipulation_routine_setVMem(vmem.b, addr, data, vmData.numBits);
 #else
                         vmem.i[addr] = data;
 #endif
@@ -135,27 +141,21 @@ Project::tick(int const numTicks, int64_t const maxEvents)
                         case Logic::NonZeroOff:
                               nextActive = lastInputs != 0;
                               break;
-
                         case Logic::ZeroOff:
                               nextActive = lastInputs == 0;
                               break;
-
                         case Logic::XorOff:
                               nextActive = lastInputs % 2;
                               break;
-
                         case Logic::XnorOff:
                               nextActive = !(lastInputs % 2);
                               break;
-
                         case Logic::LatchOff:
-                              nextActive = int(lastActive) ^ (lastInputs % 2);
+                              nextActive = static_cast<int>(lastActive) ^ (lastInputs % 2);
                               break;
-
                         case Logic::ClockOff:
                               nextActive = clockCounter == 0;
                               break;
-
                         default:;
                         }
 
@@ -169,28 +169,27 @@ Project::tick(int const numTicks, int64_t const maxEvents)
                         // Loop over neighbors
                         int const     delta = nextActive ? 1 : -1;
                         int32_t const end   = writeMap.ptr[gid + 1];
-                        int32_t       r     = writeMap.ptr[gid];
 
-                        for (r = writeMap.ptr[gid]; r < end; r++) {
-                              int const   nxtId  = writeMap.rows[r];
+                        for (int32_t r = writeMap.ptr[gid]; r < end; ++r) {
+                              auto const  nxtId  = static_cast<unsigned>(writeMap.rows[r]);
                               Logic const nxtInk = setOff(states[nxtId].logic);
 
                               // Ignore falling edge for latches
-                              if (!nextActive && nxtInk == Logic::LatchOff) [[unlikely]]
+                              if (!nextActive && nxtInk == Logic::LatchOff)
                                     continue;
 
                               // Update actives
-#if defined OVCB_MT
+#ifdef OVCB_MT
                               int const lastNxtInput = states[nxtId].activeInputs.fetch_add(delta, std::memory_order::relaxed);
 #else
                               int const lastNxtInput     = states[nxtId].activeInputs;
-                              states[nxtId].activeInputs = lastNxtInput + delta;
+                              states[nxtId].activeInputs = static_cast<int16_t>(lastNxtInput + delta);
 #endif
+                              static constexpr Logic XOR_XNOR = Logic::XorOff | Logic::XnorOff;
 
                               // Inks have convenient "critical points"
                               // We can skip any updates that do not hover around 0 with a few exceptions.
-                              if (lastNxtInput == 0 || lastNxtInput + delta == 0 ||
-                                  bool(nxtInk & (Logic::XorOff | Logic::XnorOff))) [[unlikely]]
+                              if (lastNxtInput == 0 || lastNxtInput + delta == 0 || bool(nxtInk & XOR_XNOR))
                                     tryEmit(nxtId);
                         }
                   }

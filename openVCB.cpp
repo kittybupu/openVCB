@@ -1,6 +1,6 @@
 // Code for mostly misc stuff.
 
-#include "openVCB.hh"
+#include "openVCB.h"
 
 
 namespace openVCB {

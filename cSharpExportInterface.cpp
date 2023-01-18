@@ -1,5 +1,5 @@
 // ReSharper disable CppTooWideScopeInitStatement
-#include "openVCB.hh"
+#include "openVCB.h"
 #include <tbb/spin_mutex.h>
 
 #if defined _MSC_VER
@@ -7,6 +7,8 @@
 #else
 # define EXPORT_API
 #endif
+
+namespace util = openVCB::util;
 
 namespace {
 /****************************************************************************************/
@@ -120,7 +122,11 @@ getMaxTPS()
 EXPORT_API uint32_t
 getVMemAddress()
 {
+#ifdef OVCB_BYTE_ORIENTED_VMEM 
+      return proj->lastVMemAddr / 4;
+#else
       return proj->lastVMemAddr;
+#endif
 }
 
 EXPORT_API void
@@ -163,7 +169,7 @@ toggleLatchIndex(int const idx)
 }
 
 EXPORT_API void
-addBreakpoint(int gid)
+addBreakpoint(int const gid)
 {
       float const tps = targetTPS;
       targetTPS       = 0;
@@ -174,7 +180,7 @@ addBreakpoint(int gid)
 }
 
 EXPORT_API void
-removeBreakpoint(int gid)
+removeBreakpoint(int const gid)
 {
       float const tps = targetTPS;
       targetTPS       = 0;
@@ -270,7 +276,7 @@ addInstrumentBuffer(openVCB::InkState *buf, int const bufSize, int const idx)
 EXPORT_API void
 setStateMemory(int *data, int const size)
 {
-      memcpy(data, proj->states, sizeof(int) * size);
+      memcpy(data, proj->states, sizeof(*proj->states) * size);
       delete[] proj->states;
       proj->states = reinterpret_cast<openVCB::InkState *>(data);
 }
@@ -285,7 +291,7 @@ setVMemMemory(int *data, int const size)
 EXPORT_API void
 setIndicesMemory(int *data, int const size)
 {
-      memcpy(data, proj->indexImage, sizeof(int) * size);
+      memcpy(data, proj->indexImage, sizeof(*proj->indexImage) * size);
 }
 
 EXPORT_API void
@@ -297,13 +303,13 @@ setImageMemory(int *data, int const width, int const height)
 }
 
 EXPORT_API void
-setDecoMemory(_Inout_ int *__restrict const indices,
-              UU      int const indLen,
+setDecoMemory(_Inout_ int *__restrict const       indices,
+              _In_ UU int const                   indLen,
               _In_    int const *__restrict const col,
-              UU      int const colLen)
+              _In_ UU int const                   colLen)
 {
-      std::vector<bool>      visited(proj->width * proj->height, false);
       std::queue<glm::ivec3> queue;
+      std::vector            visited(size_t(proj->width * proj->height), false);
 
       for (int32_t y = 0; y < proj->height; ++y) {
             for (int32_t x = 0; x < proj->width; ++x) {
@@ -321,18 +327,13 @@ setDecoMemory(_Inout_ int *__restrict const indices,
             }
       }
 
-      constexpr glm::ivec2 fourNeighbors[] = {
-            glm::ivec2{-1, 0}, glm::ivec2{0,  1},
-            glm::ivec2{ 1, 0}, glm::ivec2{0, -1}
-      };
-
       while (!queue.empty()) {
             auto pos = queue.front();
             queue.pop();
 
             indices[pos.x + pos.y * proj->width] = pos.z;
 
-            for (auto const &neighbor : fourNeighbors) {
+            for (auto const &neighbor : openVCB::fourNeighbors) {
                   glm::ivec2 const np = static_cast<glm::ivec2>(pos) + neighbor;
                   if (np.x < 0 || np.x >= proj->width || np.y < 0 || np.y >= proj->height)
                         continue;

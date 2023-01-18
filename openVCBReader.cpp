@@ -1,6 +1,6 @@
 // Code for file reading
 
-#include "openVCB.hh"
+#include "openVCB.h"
 #include "openVCB_Data.hh"
 
 #include <algorithm>
@@ -15,7 +15,6 @@ namespace openVCB {
 
 namespace util {
 
-
 intmax_t
 xatoi(char const *const ptr, int const base = 0)
 {
@@ -26,9 +25,9 @@ xatoi(char const *const ptr, int const base = 0)
       auto const ans = ::strtoimax(ptr, &eptr, base);
 
       if (ptr == eptr)
-            throw std::invalid_argument("invalid xatoi argument");
+            throw std::invalid_argument("Invalid atoi argument");
       if (errno_ref == ERANGE)
-            throw std::range_error("xatoi argument out of range");
+            throw std::range_error("atoi argument out of range");
 
       return ans;
 }
@@ -43,13 +42,12 @@ xatou(char const *const ptr, int const base = 0)
       auto const ans = ::strtoumax(ptr, &eptr, base);
 
       if (ptr == eptr)
-            throw std::invalid_argument("invalid xatou argument");
+            throw std::invalid_argument("Invalid atou argument");
       if (errno_ref == ERANGE)
-            throw std::range_error("xatou argument out of range");
+            throw std::range_error("atou argument out of range");
 
       return ans;
 }
-
 
 } // namespace util
 
@@ -69,12 +67,12 @@ getInkString(Ink const ink)
       return inkNames[i].data();
 }
 
-inline uint32_t
-col2int(uint32_t const col)
+inline int
+col2int(int const col)
 {
-      int r = col & 0xFF0000;
-      int g = col & 0xFF00;
-      int b = col & 0xFF;
+      int const r = col & 0xFF0000;
+      int const g = col & 0x00FF00;
+      int const b = col & 0x0000FF;
       return (r >> 16) | g | (b << 16);
 }
 
@@ -85,9 +83,9 @@ color2ink(uint32_t col)
       InkPixel pix{};
       col = col2int(col);
 
-      for (uint32_t i = 0; i < 16; ++i) {
+      for (int i = 0; i < 16; ++i) {
             if (col == traceColors[i]) {
-                  pix.meta = (int16_t)i;
+                  pix.meta = i;
                   pix.ink  = Ink::Trace;
                   break;
             }
@@ -117,30 +115,30 @@ color2ink(uint32_t col)
 }
 
 std::string
-split(std::string data, char const *t, int &start)
+split(std::string const& data, char const *t, int &start)
 {
       size_t const tlen  = strlen(t);
       int const    begin = start;
       auto const   end   = data.find(t, start + 1);
 
       if (end == std::string::npos) {
-            printf("error: token [%s] not found in .vcb\n", t);
-            exit(1);
+            ::printf("error: token [%s] not found in .vcb\n", t);
+            ::exit(1);
       }
 
-      start = static_cast<int>(end) + tlen;
+      start = static_cast<int>(end + tlen);
       return data.substr(begin, end - begin);
 }
 
 bool
-processData(std::vector<uint8_t> logicData,
-            int const            headerSize,
-            int                 &width,
-            int                 &height,
-            uint8_t            *&originalImage,
-            uint64_t            &imSize)
+processData(std::vector<uint8_t> const &logicData,
+            int const                   headerSize,
+            int                        &width,
+            int                        &height,
+            uint8_t                   *&originalImage,
+            uint64_t                   &imSize)
 {
-      int const *header  = reinterpret_cast<int *>(&logicData[logicData.size() - headerSize]);
+      int const *header  = reinterpret_cast<int const *>(&logicData[logicData.size() - headerSize]);
       int const imgDSize = header[5];
       width              = header[3];
       height             = header[1];
@@ -150,8 +148,8 @@ processData(std::vector<uint8_t> logicData,
             return false;
       }
 
-      uint8_t *cc     = logicData.data();
-      size_t   ccSize = logicData.size() - headerSize;
+      uint8_t const *cc     = logicData.data();
+      size_t const   ccSize = logicData.size() - headerSize;
 
       imSize = ZSTD_getFrameContentSize(cc, ccSize);
 
@@ -168,20 +166,22 @@ processData(std::vector<uint8_t> logicData,
             return false;
       }
 
-      originalImage      = new uint8_t[imSize];
+      originalImage = new uint8_t[imSize];
+
       size_t const dSize = ZSTD_decompress(originalImage, imSize, cc, ccSize);
-      return true;
+
+      return dSize == ccSize;
 }
 
 bool
-Project::processLogicData(std::vector<uint8_t> logicData, int32_t headerSize)
+Project::processLogicData(std::vector<uint8_t> const &logicData, int32_t const headerSize)
 {
       uint64_t imSize;
       if (processData(logicData, headerSize, width, height, originalImage, imSize)) {
             image = new InkPixel[imSize];
 #pragma omp parallel for schedule(static, 8196)
-            for (int64_t i = 0; i < (int64_t)imSize / 4; i++)
-                  image[i] = color2ink(((int *)originalImage)[i]);
+            for (int64_t i = 0; i < (int64_t)imSize / 4; ++i)
+                  image[i] = color2ink(originalImage[i]);
 
             return true;
       }
@@ -190,7 +190,7 @@ Project::processLogicData(std::vector<uint8_t> logicData, int32_t headerSize)
 }
 
 void
-Project::processDecorationData(std::vector<uint8_t> const decorationData, int *&decoData)
+Project::processDecorationData(std::vector<uint8_t> const &decorationData, int *&decoData)
 {
       uint64_t imSize = 0;
       int32_t  width;
@@ -256,7 +256,7 @@ Project::readFromVCB(std::string const &filePath)
             std::string val;
 
             while (std::getline(s, val, ','))
-                  decorationData[0].push_back(util::xatoi(val.c_str() + 1));
+                  decorationData[0].push_back(static_cast<uint8_t>(util::xatoi(val.c_str() + 1)));
       }
 
       {
@@ -265,7 +265,7 @@ Project::readFromVCB(std::string const &filePath)
             std::string val;
 
             while (std::getline(s, val, ','))
-                  decorationData[1].push_back(util::xatoi(val.c_str() + 1));
+                  decorationData[1].push_back(static_cast<uint8_t>(util::xatoi(val.c_str() + 1)));
       }
 
       {
@@ -274,7 +274,7 @@ Project::readFromVCB(std::string const &filePath)
             std::string  val;
 
             while (std::getline(s, val, ','))
-                  decorationData[2].push_back(util::xatoi(val.c_str() + 1));
+                  decorationData[2].push_back(static_cast<uint8_t>(util::xatoi(val.c_str() + 1)));
       }
 
       // led palette
@@ -288,14 +288,13 @@ Project::readFromVCB(std::string const &filePath)
 
             while (std::getline(s, val, ',')) {
                   // remove quotes
-                  val.erase(remove(val.begin(), val.end(), '\"'), val.end());
+                  val.erase(std::ranges::remove(val, '\"').begin(), val.end());
                   vecPalette.emplace_back(static_cast<uint32_t>(util::xatou(val.c_str(), 16)));
             }
       }
 
-      for (int i = 0; i < std::min((int)vecPalette.size(), 16); i++) {
+      for (int i = 0; i < std::min((int)vecPalette.size(), 16); ++i)
             ledPalette[i] = vecPalette[i];
-      }
 
       split(godotObj, "\"vmem_settings\": [ ", pos);
 
@@ -369,6 +368,16 @@ Project::readFromVCB(std::string const &filePath)
 
             // printf("Loaded image %dx%i (%i bytes)\n", width, height, dSize);
       }
+
+#if 0
+      {
+            FILE *dump = _wfopen(LR"(D:\Downloads\VCB\OpenVCB.Editor.WIN.BETA.0.8.b\dumbshit.txt)", L"wb");
+            if (dump) {
+                  fwrite(logicData.data(), sizeof(decltype(logicData)::value_type), logicData.size(), dump);
+                  fclose(dump);
+            }
+      }
+#endif
 
       processDecorationData(decorationData[0], decoration[0]);
       processDecorationData(decorationData[1], decoration[1]);

@@ -1,7 +1,7 @@
 // ReSharper disable CppTooWideScopeInitStatement
 // ReSharper disable StringLiteralTypo
 // ReSharper disable CppClangTidyCertErr33C
-#include "openVCB.hh"
+#include "openVCB.h"
 #include "openVCBExpr.hh"
 
 #include <array>
