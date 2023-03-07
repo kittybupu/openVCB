@@ -432,7 +432,7 @@ class Project
       //---------------------------------------------------------------------------------
 
       // Builds a project from an image. Remember to configure VMem.
-      void readFromVCB(std::string const &p);
+      void readFromVCB(std::string const &filePath);
 
       // Decode base64 data from clipboard, then process logic data.
       bool readFromBlueprint(std::string clipboardData);

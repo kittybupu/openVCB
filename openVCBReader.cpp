@@ -11,45 +11,6 @@
 namespace openVCB {
 
 
-namespace util {
-
-intmax_t
-xatoi(char const *const ptr, int const base = 0)
-{
-      char *eptr;
-      int  &errno_ref = errno; // Nonzero cost, pay it once
-      errno_ref       = 0;
-
-      auto const ans = ::strtoimax(ptr, &eptr, base);
-
-      if (ptr == eptr)
-            throw std::invalid_argument("Invalid atoi argument");
-      if (errno_ref == ERANGE)
-            throw std::range_error("atoi argument out of range");
-
-      return ans;
-}
-
-uintmax_t
-xatou(char const *const ptr, int const base = 0)
-{
-      char *eptr;
-      int  &errno_ref = errno; // Nonzero cost, pay it once
-      errno_ref       = 0;
-
-      auto const ans = ::strtoumax(ptr, &eptr, base);
-
-      if (ptr == eptr)
-            throw std::invalid_argument("Invalid atou argument");
-      if (errno_ref == ERANGE)
-            throw std::range_error("atou argument out of range");
-
-      return ans;
-}
-
-} // namespace util
-
-
 static constexpr int num_types       = static_cast<int>(Ink::numTypes);
 static constexpr int num_enumerators = num_types * 2;
 
@@ -216,9 +177,11 @@ void
 Project::readFromVCB(std::string const &filePath)
 {
       std::ifstream     stream(filePath);
-      std::stringstream ss;
-      ss << stream.rdbuf();
-      std::string godotObj = ss.str();
+      std::string godotObj;
+
+      while (!stream.eof())
+            stream >> godotObj;
+
       stream.close();
 
       if (godotObj.empty()) {

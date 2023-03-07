@@ -269,6 +269,7 @@ constexpr bool eq_any(T1 const &left, T1 const &right, Types const &...rest)
 template <typename>
 inline constexpr bool always_false = false;
 
+
 namespace impl {
 
 # if (defined __GNUC__ || defined __clang__ || defined __INTEL_COMPILER) || \
@@ -328,7 +329,6 @@ ND constexpr uint64_t bswap_64(uint64_t const val) noexcept {
 template <typename T>
 concept Swappable = std::is_integral_v<T> && sizeof(T) <= 8;
 
-
 } // namespace impl
 
 
@@ -355,6 +355,38 @@ ND constexpr T hton(T const val) noexcept
             return bswap(val);
       else
             return val;
+}
+
+ND inline intmax_t xatoi(char const *const ptr, int const base = 0) noexcept(false)
+{
+      char *eptr;
+      int  &errno_ref = errno; // Nonzero cost, pay it once
+      errno_ref       = 0;
+
+      auto const ans = ::strtoimax(ptr, &eptr, base);
+
+      if (ptr == eptr)
+            throw std::invalid_argument("Invalid atoi argument");
+      if (errno_ref == ERANGE)
+            throw std::range_error("atoi argument out of range");
+
+      return ans;
+}
+
+ND inline uintmax_t xatou(char const *const ptr, int const base = 0) noexcept(false)
+{
+      char *eptr;
+      int  &errno_ref = errno; // Nonzero cost, pay it once
+      errno_ref       = 0;
+
+      auto const ans = ::strtoumax(ptr, &eptr, base);
+
+      if (ptr == eptr)
+            throw std::invalid_argument("Invalid atou argument");
+      if (errno_ref == ERANGE)
+            throw std::range_error("atou argument out of range");
+
+      return ans;
 }
 
 
