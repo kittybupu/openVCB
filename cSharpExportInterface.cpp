@@ -15,8 +15,8 @@ namespace {
 
 using openVCB::Ink, openVCB::Logic;
 
-constexpr float TARGET_DT = 1.f / 60;
-constexpr float MIN_DT    = 1.f / 30;
+constexpr double TARGET_DT = 1.0 / 60.0;
+constexpr double MIN_DT    = 1.0 / 30.0;
 
 openVCB::Project *proj      = nullptr;
 std::thread      *simThread = nullptr;
@@ -35,20 +35,21 @@ simFunc()
       using clock = std::chrono::high_resolution_clock;
       using std::chrono::duration, std::chrono::milliseconds;
 
-      double tpsEst       = 2 / TARGET_DT;
-      double desiredTicks = 0;
+      double tpsEst       = 2.0 / TARGET_DT;
+      double desiredTicks = 0.0;
       auto   lastTime     = clock::now();
-
 
       while (run) {
             auto curTime = clock::now();
-            desiredTicks = std::min(desiredTicks + duration_cast<duration<double>>(curTime - lastTime).count() * targetTPS, tpsEst * MIN_DT);
+            auto diff    = duration_cast<duration<double>>(curTime - lastTime).count();
             lastTime     = curTime;
+            desiredTicks = std::min(desiredTicks + diff * double(targetTPS),
+                                    tpsEst * MIN_DT);
 
             // Find max tick amount we can do
             if (desiredTicks >= 1.) {
                   double     maxTickAmount = std::max(tpsEst * TARGET_DT, 1.);
-                  auto const tickAmount    = static_cast<int32_t>(std::min(desiredTicks, maxTickAmount));
+                  auto const tickAmount    = int32_t(std::min(desiredTicks, maxTickAmount));
 
                   // Aquire lock, simulate, and time
                   simLock.lock();
@@ -64,17 +65,17 @@ simFunc()
                         tpsEst = glm::clamp(glm::mix(maxTPS, tpsEst, 0.95), 1., 1e8);
 
                   if (res.breakpoint) {
-                        targetTPS    = 0;
-                        desiredTicks = 0;
+                        targetTPS    = 0.0F;
+                        desiredTicks = 0.0;
                         breakpoint   = true;
                   }
             }
 
             // Check how much time I got left and sleep until the next check
-            curTime       = clock::now();
-            auto const ms = 1000 * (TARGET_DT - duration_cast<duration<double>>(curTime - lastTime).count());
-            if (ms > 1.05)
-                  std::this_thread::sleep_for(milliseconds{static_cast<uint64_t>(ms)});
+            curTime = clock::now();
+            diff    = duration_cast<duration<double>>(curTime - lastTime).count();
+            if (auto const ms = 1000 * (TARGET_DT - diff); ms > 1.05)
+                  std::this_thread::sleep_for(milliseconds{uint64_t(ms)});
       }
 }
 
@@ -119,7 +120,7 @@ getMaxTPS()
       return static_cast<float>(maxTPS);
 }
 
-EXPORT_API uint32_t
+EXPORT_API uintptr_t
 getVMemAddress()
 {
 #ifdef OVCB_BYTE_ORIENTED_VMEM 
@@ -316,12 +317,12 @@ setDecoMemory(_Inout_ int *__restrict const       indices,
                   int32_t const idx = x + y * proj->width;
                   indices[idx]      = -1;
 
-                  if (static_cast<uint32_t>(col[idx]) != UINT32_MAX)
+                  if (uint32_t(col[idx]) != UINT32_MAX)
                         continue;
 
                   auto const ink = setOff(proj->image[idx].ink);
                   if (util::eq_any(ink, Ink::LatchOff, Ink::LedOff)) {
-                        queue.push(glm::ivec3(x, y, proj->indexImage[idx]));
+                        queue.push({x, y, proj->indexImage[idx]});
                         visited[idx] = true;
                   }
             }
@@ -364,7 +365,7 @@ getGroupStats(int *numGroups, int *numConnections)
 }
 
 EXPORT_API void
-setInterface(openVCB::LatchInterface addr, openVCB::LatchInterface data)
+setInterface(openVCB::LatchInterface const addr, openVCB::LatchInterface const data)
 {
       proj->vmAddr = addr;
       proj->vmData = data;

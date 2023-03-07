@@ -13,12 +13,10 @@
 #if !defined _DEBUG && false
 # define OVCB_MT 1
 #endif
-
 // Toggle use of gorder.
 //#define OVCB_USE_GORDER 1
-
 // Toggle experimental byte addressed VMem.
-#define OVCB_BYTE_ORIENTED_VMEM 1
+//#define OVCB_BYTE_ORIENTED_VMEM 1
 
 #include "openVCB_Data.hh"
 #include "openVCB_VMem.hh"
@@ -63,15 +61,15 @@ enum class Logic : uint8_t {
       LatchOff   = 0x10,
       ClockOff   = 0x20,
 
-      numTypes = 6,
-      _ink_on = 0x80,
+      _numTypes = 6,
+      _ink_on   = 0x80,
 
-      NonZero = _ink_on | NonZeroOff,
-      Zero    = _ink_on | ZeroOff,
-      Xor     = _ink_on | XorOff,
-      Xnor    = _ink_on | XnorOff,
-      Latch   = _ink_on | LatchOff,
-      Clock   = _ink_on | ClockOff,
+      NonZero = NonZeroOff | _ink_on,
+      Zero    = ZeroOff    | _ink_on,
+      Xor     = XorOff     | _ink_on,
+      Xnor    = XnorOff    | _ink_on,
+      Latch   = LatchOff   | _ink_on,
+      Clock   = ClockOff   | _ink_on,
 };
 
 
@@ -90,7 +88,6 @@ enum class Ink : uint8_t {
       ReadOff,
       WriteOff,
       Cross,
-
       BufferOff,
       OrOff,
       NandOff,
@@ -102,34 +99,51 @@ enum class Ink : uint8_t {
       ClockOff,
       LatchOff,
       LedOff,
-      BundleOff,
+      BusOff,
 
       Filler,
       Annotation,
 
+      TunnelOff,
+      TimerOff,
+      RandomOff,
+      BreakpointOff,
+      Wireless1Off,
+      Wireless2Off,
+      Wireless3Off,
+      Wireless4Off,
+
       numTypes,
       _ink_on = 0x80,
 
-      Trace        = TraceOff | _ink_on,
-      Read         = ReadOff  | _ink_on,
-      Write        = WriteOff | _ink_on,
-      InvalidCross = Cross    | _ink_on,
-
-      Buffer = BufferOff | _ink_on,
-      Or     = OrOff     | _ink_on,
-      Nand   = NandOff   | _ink_on,
-      Not    = NotOff    | _ink_on,
-      Nor    = NorOff    | _ink_on,
-      And    = AndOff    | _ink_on,
-      Xor    = XorOff    | _ink_on,
-      Xnor   = XnorOff   | _ink_on,
-      Clock  = ClockOff  | _ink_on,
-      Latch  = LatchOff  | _ink_on,
-      Led    = LedOff    | _ink_on,
-      Bundle = BundleOff | _ink_on,
+      Trace        = TraceOff  | _ink_on,
+      Read         = ReadOff   | _ink_on,
+      Write        = WriteOff  | _ink_on,
+      InvalidCross = Cross     | _ink_on,
+      Buffer       = BufferOff | _ink_on,
+      Or           = OrOff     | _ink_on,
+      Nand         = NandOff   | _ink_on,
+      Not          = NotOff    | _ink_on,
+      Nor          = NorOff    | _ink_on,
+      And          = AndOff    | _ink_on,
+      Xor          = XorOff    | _ink_on,
+      Xnor         = XnorOff   | _ink_on,
+      Clock        = ClockOff  | _ink_on,
+      Latch        = LatchOff  | _ink_on,
+      Led          = LedOff    | _ink_on,
+      Bus          = BusOff    | _ink_on,
 
       InvalidFiller     = Filler     | _ink_on,
       InvalidAnnotation = Annotation | _ink_on,
+
+      Tunnel     = TunnelOff     | _ink_on,
+      Timer      = TimerOff      | _ink_on,
+      Random     = RandomOff     | _ink_on,
+      Breakpoint = BreakpointOff | _ink_on,
+      Wireless1  = Wireless1Off  | _ink_on,
+      Wireless2  = Wireless2Off  | _ink_on,
+      Wireless3  = Wireless3Off  | _ink_on,
+      Wireless4  = Wireless4Off  | _ink_on,
 };
 
 
@@ -144,18 +158,19 @@ enum class Ink : uint8_t {
  * Incidentally, resharper whines ever so much about things not being "const",
  * so I shut it up.
  */
-#define uintc  unsigned const
+#define intc   int const
+#define uintc  uint const
 #define Logicc Logic const
 #define Inkc   Ink const
 
 template <typename T> concept Integral = std::is_integral<T>::value;
 
-ND OVCB_INLINE Logic operator>>(Logicc val,  uintc  n)    { return static_cast<Logic>(static_cast<unsigned>(val) >> n); }
-ND OVCB_INLINE Logic operator<<(Logicc val,  uintc  n)    { return static_cast<Logic>(static_cast<unsigned>(val) << n); }
-ND OVCB_INLINE Logic operator& (Logicc val1, uintc  val2) { return static_cast<Logic>(static_cast<unsigned>(val1) & val2); }
-ND OVCB_INLINE Logic operator| (Logicc val1, uintc  val2) { return static_cast<Logic>(static_cast<unsigned>(val1) | val2); }
-ND OVCB_INLINE Logic operator& (Logicc val1, Logicc val2) { return static_cast<Logic>(static_cast<unsigned>(val1) & static_cast<unsigned>(val2)); }
-ND OVCB_INLINE Logic operator| (Logicc val1, Logicc val2) { return static_cast<Logic>(static_cast<unsigned>(val1) | static_cast<unsigned>(val2)); }
+ND OVCB_INLINE Logic operator>>(Logicc val,  uintc  n)    { return static_cast<Logic>(static_cast<uint>(val) >> n); }
+ND OVCB_INLINE Logic operator<<(Logicc val,  uintc  n)    { return static_cast<Logic>(static_cast<uint>(val) << n); }
+ND OVCB_INLINE Logic operator& (Logicc val1, uintc  val2) { return static_cast<Logic>(static_cast<uint>(val1) & val2); }
+ND OVCB_INLINE Logic operator| (Logicc val1, uintc  val2) { return static_cast<Logic>(static_cast<uint>(val1) | val2); }
+ND OVCB_INLINE Logic operator& (Logicc val1, Logicc val2) { return static_cast<Logic>(static_cast<uint>(val1) & static_cast<uint>(val2)); }
+ND OVCB_INLINE Logic operator| (Logicc val1, Logicc val2) { return static_cast<Logic>(static_cast<uint>(val1) | static_cast<uint>(val2)); }
 
 template <typename T> requires Integral<T>
 ND OVCB_INLINE bool operator==(Logic const op1, T const op2)
@@ -164,12 +179,14 @@ ND OVCB_INLINE bool operator==(Logic const op1, T const op2)
 }
 
 
-ND OVCB_INLINE Ink operator>>(Inkc val,  uintc n)    { return static_cast<Ink>(static_cast<unsigned>(val) >> n); }
-ND OVCB_INLINE Ink operator<<(Inkc val,  uintc n)    { return static_cast<Ink>(static_cast<unsigned>(val) << n); }
-ND OVCB_INLINE Ink operator& (Inkc val1, uintc val2) { return static_cast<Ink>(static_cast<unsigned>(val1) & val2); }
-ND OVCB_INLINE Ink operator| (Inkc val1, uintc val2) { return static_cast<Ink>(static_cast<unsigned>(val1) | val2); }
-ND OVCB_INLINE Ink operator& (Inkc val1, Inkc  val2) { return static_cast<Ink>(static_cast<unsigned>(val1) & static_cast<unsigned>(val2)); }
-ND OVCB_INLINE Ink operator| (Inkc val1, Inkc  val2) { return static_cast<Ink>(static_cast<unsigned>(val1) | static_cast<unsigned>(val2)); }
+ND OVCB_INLINE Ink operator>>(Inkc val,  uintc n)    { return static_cast<Ink>(static_cast<uint>(val) >> n); }
+ND OVCB_INLINE Ink operator<<(Inkc val,  uintc n)    { return static_cast<Ink>(static_cast<uint>(val) << n); }
+ND OVCB_INLINE Ink operator& (Inkc val1, uintc val2) { return static_cast<Ink>(static_cast<uint>(val1) & val2); }
+ND OVCB_INLINE Ink operator| (Inkc val1, uintc val2) { return static_cast<Ink>(static_cast<uint>(val1) | val2); }
+ND OVCB_INLINE Ink operator& (Inkc val1, Inkc  val2) { return static_cast<Ink>(static_cast<uint>(val1) & static_cast<uint>(val2)); }
+ND OVCB_INLINE Ink operator| (Inkc val1, Inkc  val2) { return static_cast<Ink>(static_cast<uint>(val1) | static_cast<uint>(val2)); }
+
+ND OVCB_INLINE int operator+(Inkc val1, intc val2) { return static_cast<int>(val1) + val2; }
 
 template <typename T> requires Integral<T>
 ND OVCB_INLINE bool operator==(Ink const op1, T const op2)
@@ -177,6 +194,7 @@ ND OVCB_INLINE bool operator==(Ink const op1, T const op2)
       return op1 == static_cast<Ink>(op2);
 }
 
+#undef intc
 #undef uintc
 #undef Logicc
 #undef Inkc
@@ -191,19 +209,19 @@ ND OVCB_INLINE bool operator==(Ink const op1, T const op2)
  * \param state Should be 0 to turn off, 1 to turn on.
  * \return The modified value.
  */
-OVCB_INLINE Logic setOn(Logic const logic, unsigned const state)
+ND OVCB_INLINE Logic setOn(Logic const logic, uint const state)
 {
       return (logic & 0x7F) | (state << 7);
 }
 
 // Sets the ink type to be on
-OVCB_INLINE Logic setOn(Logic const logic)
+ND OVCB_INLINE Logic setOn(Logic const logic)
 {
       return logic | Logic::_ink_on;
 }
 
 // Sets the ink type to be off
-OVCB_INLINE Logic setOff(Logic const logic)
+ND OVCB_INLINE Logic setOff(Logic const logic)
 {
       return logic & 0x7F;
 }
@@ -224,18 +242,18 @@ ND OVCB_INLINE bool getOn(Logic const logic)
  * \param state Should be 0 to turn off, 1 to turn on.
  * \return The modified value.
  */
-OVCB_INLINE Ink setOn(Ink const ink, unsigned const state)
+ND OVCB_INLINE Ink setOn(Ink const ink, uint const state)
 {
       return (ink & 0x7F) | (state << 7);
 }
 
 // Sets the ink type to be on.
-OVCB_INLINE Ink setOn(Ink const ink)
+ND OVCB_INLINE Ink setOn(Ink const ink)
 {
       return ink | Ink::_ink_on;
 }
 // Sets the ink type to be off
-OVCB_INLINE Ink setOff(Ink const ink)
+ND OVCB_INLINE Ink setOff(Ink const ink)
 {
       return ink & 0x7F;
 }
@@ -289,7 +307,7 @@ struct InkState
       std::atomic<uint8_t> visited;      // Flags for traversal
 #else
       int16_t activeInputs; // Number of active inputs
-      bool visited;         // Flags for traversal
+      bool    visited;      // Flags for traversal
 #endif
       Logic logic; // Current logic state
 };
@@ -299,14 +317,10 @@ static_assert(sizeof(InkState) == 4 && offsetof(InkState, logic) == 3);
 
 
 struct SparseMat {
-      // Size of the matrix
-      int n;
-      // Number of non-zero entries
-      int nnz;
-      // CSC sparse matrix ptr
-      int *ptr;
-      // CSC sparse matrix rows
-      int *rows;
+      int  n;    // Size of the matrix
+      int  nnz;  // Number of non-zero entries
+      int *ptr;  // CSC sparse matrix ptr
+      int *rows; // CSC sparse matrix rows
 };
 
 
@@ -348,14 +362,14 @@ class Project
       // This remains null if VMem is not actually used.
       VMemWrapper vmem = nullptr;
 
-      size_t         vmemSize = 0;
-      std::string    assembly;
-      LatchInterface vmAddr{};
-      LatchInterface vmData{};
+      size_t         vmemSize     = 0;
+      std::string    assembly     = {};
+      LatchInterface vmAddr       = {};
+      LatchInterface vmData       = {};
       uint32_t       lastVMemAddr = 0;
-
-      int32_t height = 0;
-      int32_t width  = 0;
+      int32_t        height       = 0;
+      int32_t        width        = 0;
+      int32_t        numGroups    = 0;
 
       // An image containing component indices.
       uint8_t  *originalImage = nullptr;
@@ -372,9 +386,7 @@ class Project
             0xFF0000, 0x00FF00
       };
 
-      int32_t numGroups = 0;
-
-	std::vector<int32_t> clockGIDs;
+      std::vector<int32_t> clockGIDs;
       uint64_t             clockCounter = 0;
       uint64_t             clockPeriod  = 2;
 
@@ -401,9 +413,9 @@ class Project
       int16_t *lastActiveInputs = nullptr;
 
 #ifdef OVCB_MT
-      std::atomic<int32_t> qSize;
+      std::atomic<uint32_t> qSize;
 #else
-      int32_t qSize = 0;
+      uint32_t qSize = 0;
 #endif
 
       //---------------------------------------------------------------------------------
@@ -451,6 +463,7 @@ class Project
 
       // Preprocesses the image into the simulation format.
       // NOTE: Gorder is often slower. It is here as an experiment.
+      [[__gnu__::__hot__]]
       void preprocess();
 
       // Methods to add and remove breakpoints.
@@ -463,7 +476,7 @@ class Project
 
       /// Emits an event if it is not yet in the queue.
       [[__gnu__::__hot__]]
-      OVCB_INLINE bool tryEmit(int32_t gid)
+      OVCB_INLINE bool tryEmit(uint32_t const gid)
       {
             // Check if this event is already in queue.
 #ifdef OVCB_MT
@@ -483,10 +496,12 @@ class Project
             return true;
 #endif
       }
+
+    private:
+      OVCB_INLINE void handleVMemTick();
 };
 
 
 /****************************************************************************************/
 } // namespace openVCB
-#undef OVCB_INLINE
 #endif

@@ -4,125 +4,94 @@
 /****************************************************************************************/
 
 #if !defined _GNU_SOURCE && defined __gnu_linux__
-#  define _GNU_SOURCE //NOLINT
+# define _GNU_SOURCE //NOLINT
 #endif
 
 #ifdef _MSC_VER
-#  define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING 1
-#  define _CRT_SECURE_NO_WARNINGS 1
-#  define _USE_DECLSPECS_FOR_SAL  1
+# define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING 1
+# define _CRT_SECURE_NO_WARNINGS 1
+# define _USE_DECLSPECS_FOR_SAL  1
 #endif
 
 #if defined _WIN32 || defined _WIN64
-#  ifndef WIN32_LEAN_AND_MEAN
-#    define WIN32_LEAN_AND_MEAN 1
-#  endif
-#  ifndef NOMINMAX
-#    define NOMINMAX 1
-#  endif
+# ifndef WIN32_LEAN_AND_MEAN
+#  define WIN32_LEAN_AND_MEAN 1
+# endif
+# ifndef NOMINMAX
+#  define NOMINMAX 1
+# endif
 #endif
 
-#ifndef _MSC_VER
-#  define _Notnull_
-#  define _In_
-#  define _In_z_
-#  define _In_opt_
-#  define _In_opt_z_
-#  define _In_z_bytecount_(x)
-#  define _Out_
-#  define _Out_writes_(x)
-#  define _Out_z_cap_(x)
-#  define _Outptr_
-#  define _Outptr_result_z_
-#  define _Printf_format_string_
-#  define _Post_z_
-#  define _Noreturn_
-#  define _Analysis_noreturn_
+#ifdef _MSC_VER
+# include <sal.h>
+#else
+# define _Notnull_
+# define _In_
+# define _In_z_
+# define _In_opt_
+# define _In_opt_z_
+# define _In_z_bytecount_(x)
+# define _Out_
+# define _Out_writes_(x)
+# define _Out_z_cap_(x)
+# define _Outptr_
+# define _Outptr_result_z_
+# define _Printf_format_string_
+# define _Post_z_
+# define _Noreturn_
+# define _Analysis_noreturn_
 #endif
 
 #ifdef __RESHARPER__
-#  define _CRT_INTERNAL_NONSTDC_NAMES 1
+# define _CRT_INTERNAL_NONSTDC_NAMES 1
 #endif
 
 /*--------------------------------------------------------------------------------------*/
 
 #ifdef __cplusplus
 
-/*
- * Include all the things? No.
- */
-#include <algorithm>
-#include <array>
-#include <atomic>
-//#include <bit>
-//#include <bitset>
-#include <chrono>
-#include <compare>
-#include <concepts>
-#include <condition_variable>
-//#include <exception>
-#include <filesystem>
-#include <forward_list>
-#include <iostream>
-#include <iterator>
-#include <limits>
-#include <list>
-#include <map>
-#include <memory>
-#include <mutex>
-#include <numbers>
-#include <numeric>
-#include <queue>
-#include <random>
-#include <set>
-#include <span>
-#include <sstream>
-#include <stack>
-//#include <stdexcept>
-#include <string>
-#include <string_view>
-//#include <system_error>
-#include <thread>
-#include <tuple>
-//#include <type_traits>
-//#include <typeindex>
-//#include <typeinfo>
-#include <unordered_map>
-#include <unordered_set>
-#include <utility>
-#include <variant>
-#include <vector>
+# include <algorithm>
+# include <array>
+# include <atomic>
+# include <chrono>
+# include <concepts>
+# include <exception>
+# include <filesystem>
+# include <forward_list>
+# include <fstream>
+# include <iostream>
+# include <iterator>
+# include <limits>
+# include <list>
+# include <map>
+# include <memory>
+# include <mutex>
+# include <queue>
+# include <random>
+# include <set>
+# include <sstream>
+# include <stack>
+# include <stdexcept>
+# include <string>
+# include <string_view>
+# include <thread>
+# include <tuple>
+# include <unordered_map>
+# include <unordered_set>
+# include <utility>
+# include <variant>
+# include <vector>
 
-#include <cassert>
-#include <cerrno>
-#include <cinttypes>
-#include <climits>
-#include <csetjmp>
-#include <csignal>
-#include <cstdarg>
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-
-namespace MAIN_PACKAGE_NAMESPACE {
-using namespace std::literals;
-namespace util {
-
-template <typename T1>
-constexpr bool eq_any(T1 const &left, T1 const &right)
-{
-      return left == right;
-}
-
-template <typename T1, typename ...Types>
-constexpr bool eq_any(T1 const &left, T1 const &right, Types const &...rest)
-{
-      return left == right || eq_any(left, rest...);
-}
-
-} // namespace util
-} // namespace MAIN_PACKAGE_NAMESPACE
+# include <cassert>
+# include <cerrno>
+# include <cinttypes>
+# include <climits>
+# include <csignal>
+# include <cstdarg>
+# include <cstdint>
+# include <cstdio>
+# include <cstdlib>
+# include <cstring>
 
 #else // not C++
 
@@ -164,12 +133,10 @@ constexpr bool eq_any(T1 const &left, T1 const &right, Types const &...rest)
 #endif
 
 #ifdef __cplusplus
-# if defined _MSC_VER && defined _MSVC_LANG
-#  define CXX_LANG_VER _MSVC_LANG
+# if defined _MSC_VER && defined _MSVC_LANG && _MSVC_LANG != __cplusplus
+#  error "Invalid MSVC settings: add compiler option \"Zc:__cplusplus\""
 # endif
-# ifndef CXX_LANG_VER
-#  define CXX_LANG_VER __cplusplus
-# endif
+# define CXX_LANG_VER __cplusplus
 #endif
 
 #if (defined _HAS_CXX17)                                  || \
@@ -238,7 +205,7 @@ constexpr bool eq_any(T1 const &left, T1 const &right, Types const &...rest)
 #endif
 
 #define ATTRIBUTE_NONNULL(...) __attribute__((__nonnull__(__VA_ARGS__)))
-#define PRINTF_FORMAT_STRING   _In_z_ _Printf_format_string_ char const *__restrict
+#define PRINTF_FORMAT_STRING   _In_z_ _Printf_format_string_ char const *const __restrict
 
 #ifndef __has_builtin
 #  define __has_builtin(x) 0
@@ -268,6 +235,131 @@ constexpr bool eq_any(T1 const &left, T1 const &right, Types const &...rest)
 # ifndef __i386__
 #  define __i386__ 1
 # endif
+#endif
+
+#ifdef _WIN32
+# include <basetsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+typedef unsigned int  uint;
+typedef unsigned char uchar;
+typedef signed char   schar;
+
+/*======================================================================================*/
+
+#ifdef __cplusplus
+namespace openVCB {
+using namespace std::literals;
+namespace util {
+
+extern int logf(PRINTF_FORMAT_STRING format, ...) ATTRIBUTE_PRINTF(1, 2);
+
+template <typename T1>
+constexpr bool eq_any(T1 const &left, T1 const &right)
+{
+      return left == right;
+}
+
+template <typename T1, typename ...Types>
+constexpr bool eq_any(T1 const &left, T1 const &right, Types const &...rest)
+{
+      return left == right || eq_any(left, rest...);
+}
+
+template <typename>
+inline constexpr bool always_false = false;
+
+namespace impl {
+
+# if (defined __GNUC__ || defined __clang__ || defined __INTEL_COMPILER) || \
+     (__has_builtin(__builtin_bswap16) && __has_builtin(__builtin_bswap32) && __has_builtin(__builtin_bswap64))
+ND inline uint16_t bswap_native_16(uint16_t const val) { return __builtin_bswap16(val); }
+ND inline uint32_t bswap_native_32(uint32_t const val) { return __builtin_bswap32(val); }
+ND inline uint64_t bswap_native_64(uint64_t const val) { return __builtin_bswap64(val); }
+# elif defined _MSC_VER
+ND inline uint16_t bswap_native_16(uint16_t const val) { return _byteswap_ushort(val); }
+ND inline uint32_t bswap_native_32(uint32_t const val) { return _byteswap_ulong(val); }
+ND inline uint64_t bswap_native_64(uint64_t const val) { return _byteswap_uint64(val); }
+# else
+#  define NO_bswap_SUPPORT
+# endif
+
+ND constexpr uint16_t bswap_16(uint16_t const val) noexcept {
+# ifndef NO_bswap_SUPPORT
+      if (std::is_constant_evaluated())
+# endif
+            return static_cast<unsigned short>((val << 8) | (val >> 8));
+# ifndef NO_bswap_SUPPORT
+      else
+            return bswap_native_16(val);
+# endif
+}
+
+ND constexpr uint32_t bswap_32(uint32_t const val) noexcept
+{
+# ifndef NO_bswap_SUPPORT
+      if (std::is_constant_evaluated())
+# endif
+            return (val << 24) | ((val << 8) & 0x00FF'0000) | ((val >> 8) & 0x0000'FF00) | (val >> 24);
+# ifndef NO_bswap_SUPPORT
+      else
+            return bswap_native_32(val);
+# endif
+}
+
+ND constexpr uint64_t bswap_64(uint64_t const val) noexcept {
+# ifndef NO_bswap_SUPPORT
+      if (std::is_constant_evaluated())
+# endif
+            return ((val << 56) & 0xFF00'0000'0000'0000) |
+                   ((val << 40) & 0x00FF'0000'0000'0000) |
+                   ((val << 24) & 0x0000'FF00'0000'0000) |
+                   ((val <<  8) & 0x0000'00FF'0000'0000) |
+                   ((val >>  8) & 0x0000'0000'FF00'0000) |
+                   ((val >> 24) & 0x0000'0000'00FF'0000) |
+                   ((val >> 40) & 0x0000'0000'0000'FF00) |
+                   ((val >> 56) & 0x0000'0000'0000'00FF);
+# ifndef NO_bswap_SUPPORT
+      else
+            return bswap_native_64(val);
+# endif
+}
+
+template <typename T>
+concept Swappable = std::is_integral_v<T> && sizeof(T) <= 8;
+
+
+} // namespace impl
+
+
+template <impl::Swappable T>
+ND constexpr T bswap(T const val) noexcept
+{
+      if constexpr (sizeof(T) == 1)
+            return val;
+      else if constexpr (sizeof(T) == 2)
+            return static_cast<T>(impl::bswap_16(static_cast<uint16_t>(val)));
+      else if constexpr (sizeof(T) == 4)
+            return static_cast<T>(impl::bswap_32(static_cast<uint32_t>(val)));
+      else if constexpr (sizeof(T) == 8)
+            return static_cast<T>(impl::bswap_64(static_cast<uint64_t>(val)));
+
+      static_assert(always_false<T>, "Invalid integer size");
+      return -1;
+}
+
+template <impl::Swappable T>
+ND constexpr T hton(T const val) noexcept
+{
+      if constexpr (std::endian::native == std::endian::little)
+            return bswap(val);
+      else
+            return val;
+}
+
+
+} // namespace util
+} // namespace openVCB
 #endif
 
 

@@ -8,31 +8,19 @@ EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		ClangRelease|x64 = ClangRelease|x64
-		ClangRelease|x86 = ClangRelease|x86
 		Debug|x64 = Debug|x64
-		Debug|x86 = Debug|x86
 		oneAPIRelease|x64 = oneAPIRelease|x64
-		oneAPIRelease|x86 = oneAPIRelease|x86
 		Release|x64 = Release|x64
-		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.ClangRelease|x64.ActiveCfg = ClangRelease|x64
 		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.ClangRelease|x64.Build.0 = ClangRelease|x64
-		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.ClangRelease|x86.ActiveCfg = ClangRelease|Win32
-		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.ClangRelease|x86.Build.0 = ClangRelease|Win32
 		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.Debug|x64.ActiveCfg = Debug|x64
 		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.Debug|x64.Build.0 = Debug|x64
-		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.Debug|x86.ActiveCfg = Debug|Win32
-		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.Debug|x86.Build.0 = Debug|Win32
 		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.oneAPIRelease|x64.ActiveCfg = oneAPIRelease|x64
 		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.oneAPIRelease|x64.Build.0 = oneAPIRelease|x64
-		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.oneAPIRelease|x86.ActiveCfg = oneAPIRelease|Win32
-		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.oneAPIRelease|x86.Build.0 = oneAPIRelease|Win32
 		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.Release|x64.ActiveCfg = Release|x64
 		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.Release|x64.Build.0 = Release|x64
-		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.Release|x86.ActiveCfg = Release|Win32
-		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

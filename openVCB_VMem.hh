@@ -21,7 +21,9 @@ union VMemWrapper
       using value_type = uint8_t;
       ND auto       &def()       & noexcept { return b; }
       ND auto const &def() const & noexcept { return b; }
+# define DEF_POINTER b
 #else
+# define DEF_POINTER i
       using value_type = uint32_t;
       ND auto       &def()       & noexcept { return i; }
       ND auto const &def() const & noexcept { return i; }
@@ -38,46 +40,41 @@ union VMemWrapper
       //---------------------------------------------------------------------------------
 
       // Automatically use the default member when indexing.
-      ND auto const &operator[](size_t const idx) const & noexcept { return def()[idx]; }
-      ND auto       &operator[](size_t const idx)       & noexcept { return def()[idx]; }
-
-#if 0
-      ND auto const &operator*() const & noexcept { return *def(); }
-      ND auto       &operator*()       & noexcept { return *def(); }
-#endif
+      ND auto const &operator[](size_t const idx) const & noexcept { return DEF_POINTER[idx]; }
+      ND auto       &operator[](size_t const idx)       & noexcept { return DEF_POINTER[idx]; }
 
       // Assign pointers to the default union member.
       VMemWrapper &operator=(void *ptr) noexcept
       {
-            def() = static_cast<value_type *>(ptr);
+            DEF_POINTER = static_cast<value_type *>(ptr);
             return *this;
       }
 
       // Assign pointers to the default union member.
       VMemWrapper &operator=(value_type *ptr) noexcept
       {
-            def() = ptr;
+            DEF_POINTER = ptr;
             return *this;
       }
 
       // Allow assigning nullptr directly.
       VMemWrapper &operator=(std::nullptr_t) noexcept
       {
-            def() = nullptr;
+            DEF_POINTER = nullptr;
             return *this;
       }
 
       // Allow comparing with nullptr directly.
       ND bool constexpr operator==(std::nullptr_t) const noexcept
       {
-            return def() == nullptr;
+            return DEF_POINTER == nullptr;
       }
 
       // Allow checking whether the pointer null by placing it in a boolean
       // context just as if this were a bare pointer.
       ND explicit constexpr operator bool() const noexcept
       {
-            return def() != nullptr;
+            return DEF_POINTER != nullptr;
       }
 
       ND uint32_t *word_at_byte(size_t const offset) const noexcept
@@ -88,6 +85,7 @@ union VMemWrapper
 
 static_assert(sizeof(VMemWrapper) == sizeof(void *));
 
+#undef DEF_POINTER
 
 } // namespace openVCB
 #endif

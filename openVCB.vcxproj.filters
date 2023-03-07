@@ -57,11 +57,11 @@
     <ClCompile Include="cSharpExportInterface.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="dllmain.cc">
-      <Filter>Source Files\Rejects</Filter>
-    </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>Source Files\Rejects</Filter>
+    </ClCompile>
+    <ClCompile Include="openVCBMain.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -91,7 +91,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <MASM Include="bitroutines.asm">
+    <MASM Include="bitroutines_win32.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+    <MASM Include="bitroutines_unix.asm">
       <Filter>Source Files</Filter>
     </MASM>
   </ItemGroup>
@@ -99,15 +102,7 @@
     <Manifest Include="MyManifest.manifest" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="badidea.asm">
-      <Filter>Source Files\Rejects</Filter>
-    </CustomBuild>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="ClassDiagram.cd" />
     <None Include="cpp.hint" />
-    <None Include="vcbasm.y">
-      <Filter>Source Files</Filter>
-    </None>
   </ItemGroup>
 </Project>

@@ -19,7 +19,7 @@ class parser
       char *exp_ptr;    // points to the expression
       char  token[512]; // holds current token
       char  tok_type;   // holds token's type
-      char  errormsg[64];
+      char  errormsg[128];
 
       SymMap &vars;
 
@@ -33,7 +33,8 @@ class parser
       void eval_expr8(int64_t &result);
       void get_token();
 
-      template <size_t SrcSize> requires(sizeof errormsg >= SrcSize)
+      template <size_t SrcSize>
+      requires(sizeof errormsg >= SrcSize)
       __inline constexpr void setError(char const (&src)[SrcSize])
       {
             ::memcpy(errormsg, src, SrcSize);
@@ -44,14 +45,10 @@ class parser
 
 public:
       explicit parser(SymMap &vars);
-      int64_t eval_expr(char *exp);
+      int64_t  eval_expr(char *exp);
 
       ND char const *getError() const { return errormsg; }
-
-      explicit operator bool() const
-      {
-            return errormsg[0] == '\0';
-      }
+      ND explicit operator bool() const { return errormsg[0] == '\0'; }
 };
 
 // Parser constructor.
@@ -71,12 +68,14 @@ parser::eval_expr(char *exp)
       exp_ptr = exp;
       get_token();
       if (!*token) {
-            setError("empty"); // no expression present
+            // No expression present.
+            setError("empty");
             return 0;
       }
       eval_expr1(result);
-      if (*token) // last token must be null
-            setError("syntax error");
+      if (*token)
+            // The last token must be null.
+            formatError("syntax error (%c is not NUL)", *token);
       return result;
 }
 
@@ -225,7 +224,7 @@ parser::eval_expr8(int64_t &result)
             get_token();
       } else {
             if (isdigit(*token)) {
-                  char const id = tolower(*(token + 1));
+                  int const id = tolower(*(token + 1));
                   if (id == 'x') {
                         char *ptr = token + 2;
                         result    = 0;
@@ -242,7 +241,7 @@ parser::eval_expr8(int64_t &result)
                         while (*ptr) {
                               if (*ptr != '_')
                                     result = (result << 1) | (*ptr == '1');
-                              ptr++;
+                              ++ptr;
                         }
                   } else {
                         char *endp;
@@ -274,6 +273,9 @@ parser::eval_expr8(int64_t &result)
 void
 parser::get_token()
 {
+      static constexpr char search_term_1[] = "+-/%*|&^~!><()";
+      static constexpr char search_term_2[] = "+-/%*|&^~!><() \t";
+
       char *temp = token;
       *temp      = '\0';
 
@@ -284,7 +286,7 @@ parser::get_token()
       if (tok_type == VARIABLE && isspace(*exp_ptr)) {
             while (isspace(*(exp_ptr + 1)))
                   ++exp_ptr;
-            if (!strchr("+-/%*|&^~!><)", *(exp_ptr + 1))) {
+            if (!strchr(search_term_1, *(exp_ptr + 1))) {
                   *temp++ = '|';
                   *temp   = '\0';
                   ++exp_ptr;
@@ -297,21 +299,23 @@ parser::get_token()
             ++exp_ptr;
 
       tok_type = 0;
-      if (strchr("+-/%*|&^~!><() \t", *exp_ptr)) {
+      if (strchr(search_term_2, *exp_ptr)) {
             tok_type = DELIMITER;
             *temp++  = *exp_ptr++;
             if (*exp_ptr == '<' || *exp_ptr == '>')
                   *temp++ = *exp_ptr++;
       } else {
-            while (!strchr("+-/%*|&^~!><() \t", *exp_ptr) && (*exp_ptr))
+            while (!strchr(search_term_2, *exp_ptr) && (*exp_ptr))
                   *temp++ = *exp_ptr++;
+
             tok_type = VARIABLE;
       }
 
       *temp = '\0';
 }
 
-int parser::formatError(PRINTF_FORMAT_STRING fmt, ...)
+int
+parser::formatError(PRINTF_FORMAT_STRING fmt, ...)
 {
       va_list ap;
       va_start(ap, fmt);

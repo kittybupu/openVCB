@@ -4,9 +4,28 @@
 
 // ReSharper disable CppTooWideScope
 // ReSharper disable CppTooWideScopeInitStatement
+
 #include "openVCB.h"
 
-extern "C" void openVCB_evil_assembly_bit_manipulation_routine_setVMem(uint8_t *vmem, size_t addr, uint32_t data, int numBits);
+#if (defined __INTEL_COMPILER && false)                                   || \
+    (defined __INTEL_LLVM_COMPILER && __INTEL_LLVM_COMPILER >= 20220000L) || \
+    (defined __clang__ && __clang__ >= 12)                                || \
+    (defined __GNUC__  && __GNUC__  >= 10)
+# define USE_GNU_INLINE_ASM 1
+# if defined __INTELLISENSE__ || defined __RESHARPER__
+// MSVC catches fire if it has to look at inline assembly.
+#  define ASM_VOLATILE(...)
+# else
+#  define ASM_VOLATILE __asm__ __volatile__
+# endif
+#endif
+
+
+extern "C" {
+ND uint32_t openVCB_evil_assembly_bit_manipulation_routine_getVMem(uint8_t *vmem, size_t addr);
+   void     openVCB_evil_assembly_bit_manipulation_routine_setVMem(uint8_t *vmem, size_t addr, uint32_t data, int numBits);
+}
+
 
 namespace openVCB {
 
@@ -42,59 +61,8 @@ Project::tick(int const numTicks, int64_t const maxEvents)
             ++tickNum;
 
             // VMem implementation.
-            if (vmem) {
-                  // Get current address
-                  uint32_t addr = 0;
-                  for (int k = 0; k < vmAddr.numBits; ++k)
-                        addr |= static_cast<unsigned>(getOn(states[vmAddr.gids[k]].logic)) << k;
-
-                  if (addr != lastVMemAddr) {
-                        // Load address
-                        lastVMemAddr  = addr;
-#ifdef OVCB_BYTE_ORIENTED_VMEM
-                        uint32_t data = (vmem.b[addr]) | (vmem.b[addr+1]<<8) | (vmem.b[addr+2]<<16) | (vmem.b[addr+3]<<24);
-#else
-                        uint32_t data = vmem.i[addr];
-#endif
-                        // Turn on those latches
-                        for (int k = 0; k < vmData.numBits; ++k) {
-                              auto      &state = states[vmData.gids[k]];
-                              bool const isOn  = getOn(state.logic);
-
-                              if (((data >> k) & 1) != isOn) {
-                                    state.activeInputs = 1;
-                                    if (state.visited)
-                                          continue;
-                                    state.visited       = true;
-                                    updateQ[0][qSize++] = vmData.gids[k];
-                              }
-                        }
-
-                        // Forcibly ignore further address updates
-                        for (int k = 0; k < vmAddr.numBits; ++k)
-                              states[vmAddr.gids[k]].activeInputs = 0;
-                  } else {
-                        // Write address
-                        uint32_t data = 0;
-                        for (int k = 0; k < vmData.numBits; ++k) {
-                              auto const &state = states[vmData.gids[k]];
-                              data |= static_cast<unsigned>(getOn(state.logic)) << k;
-                        }
-
-#ifdef OVCB_BYTE_ORIENTED_VMEM
-                        uint32_t *const tmp_ptr = vmem.word_at_byte(addr);
-                        // If numBits is 32 then this shift does nothing, meaning data
-                        // will be ORed with all of *tmp_ptr. So avoid that.
-                        *tmp_ptr = vmData.numBits == 32
-                                       ? data
-                                       : data | ((UINT32_MAX << vmData.numBits) & *tmp_ptr);
-
-                        //openVCB_evil_assembly_bit_manipulation_routine_setVMem(vmem.b, addr, data, vmData.numBits);
-#else
-                        vmem.i[addr] = data;
-#endif
-                  }
-            }
+            if (vmem)
+                  handleVMemTick();
 
             // Update the clock ink
             if (++clockCounter >= clockPeriod)
@@ -107,12 +75,12 @@ Project::tick(int const numTicks, int64_t const maxEvents)
             for (int traceUpdate = 0; traceUpdate < 2; ++traceUpdate) {
                   // We update twice per tick
                   // Remember stuff
-                  int const numEvents = qSize;
-                  qSize = 0;
+                  uint const numEvents = qSize;
+                  qSize                = 0;
                   res.numEventsProcessed += numEvents;
 
                   // Copy over the current number of active inputs
-                  for (int i = 0; i < numEvents; ++i) {
+                  for (uint i = 0; i < numEvents; ++i) {
                         int const   gid = updateQ[0][i];
                         Logic const ink = states[gid].logic;
 
@@ -129,34 +97,21 @@ Project::tick(int const numTicks, int64_t const maxEvents)
 # pragma omp parallel for schedule(static, 4 * 1024) num_threads(2) if (numEvents > 8 * 1024)
 #endif
                   // Main update loop
-                  for (int i = 0; i < numEvents; ++i) {
+                  for (uint i = 0; i < numEvents; ++i) {
                         int const   gid        = updateQ[0][i];
                         Logic const curInk     = states[gid].logic;
                         bool const  lastActive = getOn(curInk);
                         int const   lastInputs = lastActiveInputs[i];
-                        bool        nextActive = false;
+                        bool        nextActive;
 
-                        Logic const offInk = setOff(curInk);
-                        switch (offInk) {
-                        case Logic::NonZeroOff:
-                              nextActive = lastInputs != 0;
-                              break;
-                        case Logic::ZeroOff:
-                              nextActive = lastInputs == 0;
-                              break;
-                        case Logic::XorOff:
-                              nextActive = lastInputs % 2;
-                              break;
-                        case Logic::XnorOff:
-                              nextActive = !(lastInputs % 2);
-                              break;
-                        case Logic::LatchOff:
-                              nextActive = static_cast<int>(lastActive) ^ (lastInputs % 2);
-                              break;
-                        case Logic::ClockOff:
-                              nextActive = clockCounter == 0;
-                              break;
-                        default:;
+                        switch (setOff(curInk)) {
+                        case Logic::NonZeroOff: nextActive = lastInputs != 0;                    break;
+                        case Logic::ZeroOff:    nextActive = lastInputs == 0;                    break;
+                        case Logic::XorOff:     nextActive = lastInputs % 2;                     break;
+                        case Logic::XnorOff:    nextActive = !(lastInputs % 2);                  break;
+                        case Logic::LatchOff:   nextActive = int(lastActive) ^ (lastInputs % 2); break;
+                        case Logic::ClockOff:   nextActive = clockCounter == 0;                  break;
+                        default:                nextActive = false;
                         }
 
                         // Short circuit if the state didnt change
@@ -171,7 +126,7 @@ Project::tick(int const numTicks, int64_t const maxEvents)
                         int32_t const end   = writeMap.ptr[gid + 1];
 
                         for (int32_t r = writeMap.ptr[gid]; r < end; ++r) {
-                              auto const  nxtId  = static_cast<unsigned>(writeMap.rows[r]);
+                              auto const  nxtId  = static_cast<uint>(writeMap.rows[r]);
                               Logic const nxtInk = setOff(states[nxtId].logic);
 
                               // Ignore falling edge for latches
@@ -183,7 +138,7 @@ Project::tick(int const numTicks, int64_t const maxEvents)
                               int const lastNxtInput = states[nxtId].activeInputs.fetch_add(delta, std::memory_order::relaxed);
 #else
                               int const lastNxtInput     = states[nxtId].activeInputs;
-                              states[nxtId].activeInputs = static_cast<int16_t>(lastNxtInput + delta);
+                              states[nxtId].activeInputs = int16_t(lastNxtInput + delta);
 #endif
                               static constexpr Logic XOR_XNOR = Logic::XorOff | Logic::XnorOff;
 
@@ -212,6 +167,79 @@ void
 Project::removeBreakpoint(int const gid)
 {
       breakpoints.erase(gid);
+}
+
+OVCB_INLINE void
+Project::handleVMemTick()
+{
+      // Get current address
+      uint32_t addr = 0;
+      for (int k = 0; k < vmAddr.numBits; ++k)
+            addr |= static_cast<uint>(getOn(states[vmAddr.gids[k]].logic)) << k;
+
+      if (addr != lastVMemAddr) {
+            // Load address
+            uint32_t data = 0;
+            lastVMemAddr  = addr;
+
+#ifdef OVCB_BYTE_ORIENTED_VMEM
+# ifdef USE_GNU_INLINE_ASM
+            // We can use Intel syntax. Hooray.
+            ASM_VOLATILE (
+                  "mov	%[data], [%[vmem] + %q[addr]]"
+                  : [data] "=r" (data)
+                  : [vmem] "r" (vmem.b), [addr] "r" (addr)
+                  :
+            );
+# else
+            data = ::openVCB_evil_assembly_bit_manipulation_routine_getVMem(vmem.b, addr);
+# endif
+#else
+            data = vmem.i[addr];
+#endif
+
+            // Turn on those latches
+            for (int k = 0; k < vmData.numBits; ++k) {
+                  auto      &state = states[vmData.gids[k]];
+                  bool const isOn  = getOn(state.logic);
+
+                  if (((data >> k) & 1) != isOn) {
+                        state.activeInputs = 1;
+                        if (state.visited)
+                              continue;
+                        state.visited       = true;
+                        updateQ[0][qSize++] = vmData.gids[k];
+                  }
+            }
+
+            // Forcibly ignore further address updates
+            for (int k = 0; k < vmAddr.numBits; ++k)
+                  states[vmAddr.gids[k]].activeInputs = 0;
+      } else {
+            // Write address
+            uint32_t data = 0;
+            for (int k = 0; k < vmData.numBits; ++k)
+                  data |= static_cast<uint>(getOn(states[vmData.gids[k]].logic)) << k;
+
+#ifdef OVCB_BYTE_ORIENTED_VMEM
+# ifdef USE_GNU_INLINE_ASM
+            ASM_VOLATILE (
+                  "shrx	eax, [%[vmem] + %q[addr]], %[numBits]" "\n\t"
+                  "shlx	rax, rax, %q[numBits]"                 "\n\t"
+                  "or	eax, %[data]"                          "\n\t"
+                  "mov	[%[vmem] + %q[addr]], eax"             "\n\t"
+                  :
+                  : [vmem] "r" (vmem.b), [addr] "r" (addr),
+                    [data] "r" (data),   [numBits] "r" (vmData.numBits)
+                  : "cc", "rax"
+            );
+# else
+            openVCB_evil_assembly_bit_manipulation_routine_setVMem(vmem.b, addr, data, vmData.numBits);
+# endif
+#else
+            vmem.i[addr] = data;
+#endif
+      }
 }
 
 

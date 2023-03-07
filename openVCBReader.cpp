@@ -3,8 +3,6 @@
 #include "openVCB.h"
 #include "openVCB_Data.hh"
 
-#include <algorithm>
-#include <fstream>
 #include <zstd.h>
 
 /*--------------------------------------------------------------------------------------*/
@@ -52,7 +50,8 @@ xatou(char const *const ptr, int const base = 0)
 } // namespace util
 
 
-static constexpr int num_types = static_cast<int>(Ink::numTypes);
+static constexpr int num_types       = static_cast<int>(Ink::numTypes);
+static constexpr int num_enumerators = num_types * 2;
 
 
 char const *
@@ -61,18 +60,18 @@ getInkString(Ink const ink)
       int i = static_cast<int>(ink);
       if (i >= 128)
             i += num_types - 128;
-      if (i < 0 || i > 2 * num_types)
+      if (i < 0 || i > num_enumerators)
             return "None";
       assert(i < std::size(inkNames));
       return inkNames[i].data();
 }
 
 inline int
-col2int(int const col)
+col2int(uint32_t const col)
 {
-      int const r = col & 0xFF0000;
-      int const g = col & 0x00FF00;
-      int const b = col & 0x0000FF;
+      int const r = col & UINT32_C(0xFF0000);
+      int const g = col & UINT32_C(0x00FF00);
+      int const b = col & UINT32_C(0x0000FF);
       return (r >> 16) | g | (b << 16);
 }
 
@@ -101,7 +100,7 @@ color2ink(uint32_t col)
             break;
 
       default:
-            for (int i = 0; i < 2 * num_types; ++i) {
+            for (int i = 0; i < num_enumerators; ++i) {
                   if (colorPallet[i] == col) {
                         if (i >= num_types)
                               i += 128 - num_types;
@@ -144,7 +143,7 @@ processData(std::vector<uint8_t> const &logicData,
       height             = header[1];
 
       if (imgDSize != width * height * 4) {
-            printf("Error: header width x height does not match header length");
+            fputs("Error: header width x height does not match header length\n", stderr);
             return false;
       }
 
@@ -154,15 +153,15 @@ processData(std::vector<uint8_t> const &logicData,
       imSize = ZSTD_getFrameContentSize(cc, ccSize);
 
       if (imSize == ZSTD_CONTENTSIZE_ERROR) {
-            printf("error: not compressed by zstd!");
+            fputs("error: not compressed by zstd!\n", stderr);
             return false;
       }
       if (imSize == ZSTD_CONTENTSIZE_UNKNOWN) {
-            printf("error: original size unknown!");
+            fputs("error: original size unknown!\n", stderr);
             return false;
       }
       if (static_cast<int>(imSize) != imgDSize) {
-            printf("error: decompressed image data size does not match header");
+            fputs("error: decompressed image data size does not match header\n", stderr);
             return false;
       }
 
@@ -223,7 +222,7 @@ Project::readFromVCB(std::string const &filePath)
       stream.close();
 
       if (godotObj.empty()) {
-            ::printf("Could not read file \"%s\"\n", filePath.c_str());
+            ::fprintf(stderr, "Could not read file \"%s\"\n", filePath.c_str());
             ::exit(1);
       }
 
@@ -368,16 +367,6 @@ Project::readFromVCB(std::string const &filePath)
 
             // printf("Loaded image %dx%i (%i bytes)\n", width, height, dSize);
       }
-
-#if 0
-      {
-            FILE *dump = _wfopen(LR"(D:\Downloads\VCB\OpenVCB.Editor.WIN.BETA.0.8.b\dumbshit.txt)", L"wb");
-            if (dump) {
-                  fwrite(logicData.data(), sizeof(decltype(logicData)::value_type), logicData.size(), dump);
-                  fclose(dump);
-            }
-      }
-#endif
 
       processDecorationData(decorationData[0], decoration[0]);
       processDecorationData(decorationData[1], decoration[1]);

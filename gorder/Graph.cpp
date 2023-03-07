@@ -624,7 +624,7 @@ namespace Gorder {
 			if (graph[v].outdegree <= hugevertex) {
 				for (int i = graph[v].outstart, limit1 = graph[v + 1].outstart; i < limit1; i++) {
 					int w = outedge[i];
-					if (unlikely(unitheap.update[w] == 0)) {
+					if (unlikely(unitheap.update[w] == 0)) [[unlikely]] {
 						unitheap.IncrementKey(w);
 					}
 					else {
@@ -641,7 +641,7 @@ namespace Gorder {
 			for (int i = graph[v].instart, limit1 = graph[v + 1].instart; i < limit1; i++) {
 				int u = inedge[i];
 				if (graph[u].outdegree <= hugevertex) {
-					if (unlikely(unitheap.update[u] == 0)) {
+					if (unlikely(unitheap.update[u] == 0)) [[unlikely]] {
 						unitheap.IncrementKey(u);
 					}
 					else {
@@ -656,7 +656,7 @@ namespace Gorder {
 						if (graph[u].outdegree > 1)
 							for (int j = graph[u].outstart, limit2 = graph[u + 1].outstart; j < limit2; j++) {
 								int w = outedge[j];
-								if (unlikely(unitheap.update[w] == 0)) {
+								if (unlikely(unitheap.update[w] == 0)) [[unlikely]] {
 									unitheap.IncrementKey(w);
 								}
 								else {
