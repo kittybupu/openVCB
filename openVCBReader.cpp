@@ -8,17 +8,16 @@
 /*--------------------------------------------------------------------------------------*/
 
 
-namespace openVCB {
-
-
-static constexpr int num_types       = static_cast<int>(Ink::numTypes);
+namespace openVCB
+{
+static constexpr int num_types       = static_cast<unsigned>(Ink::numTypes);
 static constexpr int num_enumerators = num_types * 2;
 
 
 char const *
 getInkString(Ink const ink)
 {
-      int i = static_cast<int>(ink);
+      unsigned i = static_cast<int>(ink);
       if (i >= 128)
             i += num_types - 128;
       if (i < 0 || i > num_enumerators)
@@ -27,12 +26,12 @@ getInkString(Ink const ink)
       return inkNames[i].data();
 }
 
-inline int
+inline uint32_t
 col2int(uint32_t const col)
 {
-      int const r = col & UINT32_C(0xFF0000);
-      int const g = col & UINT32_C(0x00FF00);
-      int const b = col & UINT32_C(0x0000FF);
+      uint const r = col & UINT32_C(0xFF0000);
+      uint const g = col & UINT32_C(0x00FF00);
+      uint const b = col & UINT32_C(0x0000FF);
       return (r >> 16) | g | (b << 16);
 }
 
@@ -75,7 +74,7 @@ color2ink(uint32_t col)
 }
 
 std::string
-split(std::string const& data, char const *t, int &start)
+split(std::string const &data, char const *t, int &start)
 {
       size_t const tlen  = strlen(t);
       int const    begin = start;
@@ -98,7 +97,9 @@ processData(std::vector<uint8_t> const &logicData,
             uint8_t                   *&originalImage,
             uint64_t                   &imSize)
 {
-      int const *header  = reinterpret_cast<int const *>(&logicData[logicData.size() - headerSize]);
+      auto const *header =
+          reinterpret_cast<int const *>(&logicData[logicData.size() - headerSize]);
+
       int const imgDSize = header[5];
       width              = header[3];
       height             = header[1];
@@ -114,15 +115,16 @@ processData(std::vector<uint8_t> const &logicData,
       imSize = ZSTD_getFrameContentSize(cc, ccSize);
 
       if (imSize == ZSTD_CONTENTSIZE_ERROR) {
-            fputs("error: not compressed by zstd!\n", stderr);
+            (void)fputs("error: not compressed by zstd!\n", stderr);
             return false;
       }
       if (imSize == ZSTD_CONTENTSIZE_UNKNOWN) {
-            fputs("error: original size unknown!\n", stderr);
+            (void)fputs("error: original size unknown!\n", stderr);
             return false;
       }
       if (static_cast<int>(imSize) != imgDSize) {
-            fputs("error: decompressed image data size does not match header\n", stderr);
+            (void)fputs("error: decompressed image data size does not match header\n",
+                        stderr);
             return false;
       }
 
@@ -136,6 +138,7 @@ processData(std::vector<uint8_t> const &logicData,
 bool
 Project::processLogicData(std::vector<uint8_t> const &logicData, int32_t const headerSize)
 {
+      __debugbreak();
       uint64_t imSize;
       if (processData(logicData, headerSize, width, height, originalImage, imSize)) {
             image = new InkPixel[imSize];
@@ -156,10 +159,11 @@ Project::processDecorationData(std::vector<uint8_t> const &decorationData, int *
       int32_t  width;
       int32_t  height;
 
-      union {
+      union lazy_u {
             int           *i;
             unsigned char *uc;
-      } lazy = {.i = decoData};
+      };
+      lazy_u lazy = {.i = decoData};
 
       auto const ret = processData(decorationData, 24, width, height, lazy.uc, imSize);
       decoData       = lazy.i;
@@ -168,7 +172,7 @@ Project::processDecorationData(std::vector<uint8_t> const &decorationData, int *
       if (ret) {
             for (uint64_t i = 0; i < imSize / 4; i++) {
                   int const color = decoData[i];
-                  decoData[i]     = col2int(color);
+                  decoData[i]     = static_cast<int>(col2int(color));
             }
       }
 }
@@ -176,8 +180,8 @@ Project::processDecorationData(std::vector<uint8_t> const &decorationData, int *
 void
 Project::readFromVCB(std::string const &filePath)
 {
-      std::ifstream     stream(filePath);
-      std::string godotObj;
+      std::ifstream stream(filePath);
+      std::string   godotObj;
 
       while (!stream.eof())
             stream >> godotObj;
@@ -185,8 +189,9 @@ Project::readFromVCB(std::string const &filePath)
       stream.close();
 
       if (godotObj.empty()) {
-            ::fprintf(stderr, "Could not read file \"%s\"\n", filePath.c_str());
-            ::exit(1);
+            std::ignore = ::fprintf(stderr, "Could not read file \"%s\"\n",
+                                    filePath.c_str());
+            ::exit(1); // NOLINT(concurrency-mt-unsafe)
       }
 
       // split out assembly
@@ -203,9 +208,9 @@ Project::readFromVCB(std::string const &filePath)
       split(godotObj, "PoolByteArray(", pos);
 
       {
-            auto dat = split(godotObj, " ), PoolByteArray( ", pos);
-            auto s = std::stringstream(dat);
             std::string val;
+            auto const  dat = split(godotObj, " ), PoolByteArray( ", pos);
+            auto        s   = std::stringstream(dat);
 
             while (std::getline(s, val, ','))
                   logicData.push_back(util::xatoi(val.c_str() + 1));
@@ -213,30 +218,33 @@ Project::readFromVCB(std::string const &filePath)
 
       auto decorationData = new std::vector<uint8_t>[3];
       {
-            auto dat = split(godotObj, " ), PoolByteArray( ", --pos);
-            auto s   = std::stringstream(dat);
             std::string val;
+            auto const  dat = split(godotObj, " ), PoolByteArray( ", --pos);
+            auto        s   = std::stringstream(dat);
 
             while (std::getline(s, val, ','))
-                  decorationData[0].push_back(static_cast<uint8_t>(util::xatoi(val.c_str() + 1)));
+                  decorationData[0].push_back(
+                      static_cast<uint8_t>(util::xatoi(val.c_str() + 1)));
       }
 
       {
-            auto dat = split(godotObj, " ), PoolByteArray( ", --pos);
-            auto s   = std::stringstream (dat);
             std::string val;
+            auto const  dat = split(godotObj, " ), PoolByteArray( ", --pos);
+            auto        s   = std::stringstream(dat);
 
             while (std::getline(s, val, ','))
-                  decorationData[1].push_back(static_cast<uint8_t>(util::xatoi(val.c_str() + 1)));
+                  decorationData[1].push_back(
+                      static_cast<uint8_t>(util::xatoi(val.c_str() + 1)));
       }
 
       {
-            auto dat = split(godotObj, " ) ]", --pos);
-            auto s   = std::stringstream(dat);
-            std::string  val;
+            std::string val;
+            auto const  dat = split(godotObj, " ) ]", --pos);
+            auto        s   = std::stringstream(dat);
 
             while (std::getline(s, val, ','))
-                  decorationData[2].push_back(static_cast<uint8_t>(util::xatoi(val.c_str() + 1)));
+                  decorationData[2].push_back(
+                      static_cast<uint8_t>(util::xatoi(val.c_str() + 1)));
       }
 
       // led palette
@@ -244,14 +252,15 @@ Project::readFromVCB(std::string const &filePath)
       split(godotObj, "\"led_palette\": [ ", pos);
 
       {
-            auto dat = split(godotObj, " ]", pos);
-            auto s   = std::stringstream (dat);
             std::string val;
+            auto const  dat = split(godotObj, " ]", pos);
+            auto        s   = std::stringstream(dat);
 
             while (std::getline(s, val, ',')) {
                   // remove quotes
                   val.erase(std::ranges::remove(val, '\"').begin(), val.end());
-                  vecPalette.emplace_back(static_cast<uint32_t>(util::xatou(val.c_str(), 16)));
+                  vecPalette.emplace_back(
+                      static_cast<uint32_t>(util::xatou(val.c_str(), 16)));
             }
       }
 
@@ -291,6 +300,7 @@ Project::readFromVCB(std::string const &filePath)
       vmData.size.x   = vmemArr[12];
       vmData.size.y   = vmemArr[13];
 
+      __debugbreak();
       if (vmemFlag) {
             vmemSize = UINT64_C(1) << vmAddr.numBits;
 #ifdef OVCB_BYTE_ORIENTED_VMEM
@@ -300,7 +310,8 @@ Project::readFromVCB(std::string const &filePath)
 #endif
       }
 
-      if (processLogicData(logicData, 24)) {
+      if (processLogicData(logicData, 24))
+      {
             // Overwrite latch locations for vmem
             if (vmemFlag) {
                   for (int i = 0; i < vmAddr.numBits; i++) {
@@ -308,7 +319,8 @@ Project::readFromVCB(std::string const &filePath)
                         auto end   = start + vmAddr.size;
                         for (auto pos = start; pos.x < end.x; pos.x++) {
                               for (pos.y = start.y; pos.y < end.y; pos.y++) {
-                                    if (pos.x < 0 || pos.x >= width || pos.y < 0 || pos.y >= height)
+                                    if (pos.x < 0 || pos.x >= width || pos.y < 0 ||
+                                        pos.y >= height)
                                           continue;
                                     image[pos.x + pos.y * width].ink = Ink::LatchOff;
                               }
@@ -335,5 +347,4 @@ Project::readFromVCB(std::string const &filePath)
       processDecorationData(decorationData[1], decoration[1]);
       processDecorationData(decorationData[2], decoration[2]);
 }
-
 } // namespace openVCB

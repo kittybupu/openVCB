@@ -2,7 +2,7 @@
 #include "openVCB.h"
 #include <tbb/spin_mutex.h>
 
-#if defined _MSC_VER
+#ifdef _WIN32
 # define EXPORT_API __declspec(dllexport)
 #else
 # define EXPORT_API
@@ -22,8 +22,8 @@ openVCB::Project *proj      = nullptr;
 std::thread      *simThread = nullptr;
 tbb::spin_mutex   simLock;
 
-float  targetTPS  = 0;
-double maxTPS     = 0;
+float  targetTPS  = 0.0f;
+double maxTPS     = 0.0;
 bool   run        = true;
 bool   breakpoint = false;
 
@@ -47,8 +47,8 @@ simFunc()
                                     tpsEst * MIN_DT);
 
             // Find max tick amount we can do
-            if (desiredTicks >= 1.) {
-                  double     maxTickAmount = std::max(tpsEst * TARGET_DT, 1.);
+            if (desiredTicks >= 1.0) {
+                  double     maxTickAmount = std::max(tpsEst * TARGET_DT, 1.0);
                   auto const tickAmount    = int32_t(std::min(desiredTicks, maxTickAmount));
 
                   // Aquire lock, simulate, and time
@@ -62,10 +62,10 @@ simFunc()
                   desiredTicks = desiredTicks - res.numTicksProcessed;
                   maxTPS       = res.numTicksProcessed / duration_cast<duration<double>>(t2 - t1).count();
                   if (isfinite(maxTPS))
-                        tpsEst = glm::clamp(glm::mix(maxTPS, tpsEst, 0.95), 1., 1e8);
+                        tpsEst = glm::clamp(glm::mix(maxTPS, tpsEst, 0.95), 1.0, 1e8);
 
                   if (res.breakpoint) {
-                        targetTPS    = 0.0F;
+                        targetTPS    = 0.0f;
                         desiredTicks = 0.0;
                         breakpoint   = true;
                   }
@@ -202,7 +202,7 @@ pollBreakpoint()
 EXPORT_API void
 setClockPeriod(uint64_t const period)
 {
-      proj->clockPeriod = period;
+      proj->clockPeriod = static_cast<uint32_t>(period);
 }
 
 
@@ -279,7 +279,8 @@ setStateMemory(int *data, int const size)
 {
       memcpy(data, proj->states, sizeof(*proj->states) * size);
       delete[] proj->states;
-      proj->states = reinterpret_cast<openVCB::InkState *>(data);
+      proj->states_is_native = false;
+      proj->states           = reinterpret_cast<openVCB::InkState *>(data);
 }
 
 EXPORT_API void
@@ -369,6 +370,52 @@ setInterface(openVCB::LatchInterface const addr, openVCB::LatchInterface const d
 {
       proj->vmAddr = addr;
       proj->vmData = data;
+}
+
+
+/*--------------------------------------------------------------------------------------*/
+
+
+static openVCB::string_array *global_errors_reference = nullptr;
+static bool                   inhibitStupidity        = false;
+
+
+EXPORT_API char **
+openVCB_compile_and_run_project(size_t *numErrors, int *stateSize)
+{
+      proj->preprocess();
+
+      *numErrors = proj->error_messages->qty;
+      if (proj->error_messages->qty > 0) {
+            *stateSize              = -1;
+            global_errors_reference = proj->error_messages;
+            proj->error_messages    = nullptr;
+
+            inhibitStupidity = true;
+            delete proj;
+            proj = nullptr;
+            inhibitStupidity = false;
+
+            return global_errors_reference->list;
+      }
+
+      delete proj->error_messages;
+      proj->error_messages = nullptr;
+      *stateSize = proj->numGroups;
+
+      // Start sim thread paused
+      run        = true;
+      simThread  = new std::thread(simFunc);
+      return nullptr;
+}
+
+EXPORT_API void 
+openVCB_free_error_strings() noexcept
+{
+      if (!inhibitStupidity) {
+            delete global_errors_reference;
+            global_errors_reference = nullptr;
+      }
 }
 
 

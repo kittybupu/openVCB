@@ -4,18 +4,16 @@
 
 #include "openVCB.h"
 
-namespace openVCB {
-
-
+namespace openVCB
+{
 /**
  * \brief Stores the vmem array. This union makes the byte-addressed variant of openVCB
  * simpler to implement and should have no runtime impact at all.
  * @note This level of obsessive nonsense is excessive even for me.
  */
-union VMemWrapper
-{
+union VMemWrapper {
       uint32_t *i;
-      uint8_t  *b;
+      uint8_t * b;
 
 #ifdef OVCB_BYTE_ORIENTED_VMEM
       using value_type = uint8_t;
@@ -25,7 +23,7 @@ union VMemWrapper
 #else
 # define DEF_POINTER i
       using value_type = uint32_t;
-      ND auto       &def()       & noexcept { return i; }
+      ND auto &      def() & noexcept { return i; }
       ND auto const &def() const & noexcept { return i; }
 #endif
 
@@ -33,15 +31,30 @@ union VMemWrapper
 
       VMemWrapper() noexcept = default;
 
-      VMemWrapper(uint32_t *ptr) noexcept : i(ptr) {}
-      VMemWrapper(uint8_t *ptr)  noexcept : b(ptr) {}
-      VMemWrapper(nullptr_t)     noexcept : i(nullptr) {}
+      VMemWrapper(uint32_t *ptr) noexcept
+            : i(ptr)
+      {
+      }
+
+      VMemWrapper(uint8_t *ptr) noexcept
+            : b(ptr)
+      {
+      }
+
+      VMemWrapper(nullptr_t) noexcept
+            : i(nullptr)
+      {
+      }
 
       //---------------------------------------------------------------------------------
 
       // Automatically use the default member when indexing.
-      ND auto const &operator[](size_t const idx) const & noexcept { return DEF_POINTER[idx]; }
-      ND auto       &operator[](size_t const idx)       & noexcept { return DEF_POINTER[idx]; }
+      ND auto const &operator[](size_t const idx) const & noexcept
+      {
+            return DEF_POINTER[idx];
+      }
+
+      ND auto &operator[](size_t const idx) & noexcept { return DEF_POINTER[idx]; }
 
       // Assign pointers to the default union member.
       VMemWrapper &operator=(void *ptr) noexcept
@@ -83,9 +96,16 @@ union VMemWrapper
       }
 };
 
+#undef DEF_POINTER
 static_assert(sizeof(VMemWrapper) == sizeof(void *));
 
-#undef DEF_POINTER
+
+template <typename Ty>
+class ManagedMemory
+{
+      
+};
+
 
 } // namespace openVCB
 #endif

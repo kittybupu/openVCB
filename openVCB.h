@@ -1,26 +1,18 @@
+/*
+ * This is the primary header file for openVCB.
+ */
 #pragma once
 #ifndef C8kWpReCttGxHsWkLLl1RDjAweb3HDua
 #define C8kWpReCttGxHsWkLLl1RDjAweb3HDua
 
-/*
- * This is the primary header ifle for openVCB
- */
-
 #include "utils.hh"
 #include <glm/glm.hpp>
 
-/// Enable multithreading
-#if !defined _DEBUG && false
-# define OVCB_MT 1
-#endif
-// Toggle use of gorder.
-//#define OVCB_USE_GORDER 1
 // Toggle experimental byte addressed VMem.
-//#define OVCB_BYTE_ORIENTED_VMEM 1
+/* #undef OVCB_BYTE_ORIENTED_VMEM */
 
 #include "openVCB_Data.hh"
 #include "openVCB_VMem.hh"
-
 
 #if defined _MSC_VER
 #  define OVCB_INLINE constexpr __forceinline
@@ -38,15 +30,6 @@ namespace openVCB {
 /****************************************************************************************/
 
 
-struct LatchInterface {
-      glm::ivec2 pos;     // Coordinates of the LSB latch.
-      glm::ivec2 stride;  // Space between each latch (both x and y).
-      glm::ivec2 size;    // Physical ize of the latch in squares as (x,y) pair.
-      int        numBits; // Value always 32 or lower
-      int        gids[64];
-};
-
-
 /**
  * @brief 8 bit state. 7 bit type + 1 active bit.
  * @note
@@ -54,6 +37,7 @@ struct LatchInterface {
  * - This is seperate from Ink to simplify switch logic
  */
 enum class Logic : uint8_t {
+      None       = 0,
       NonZeroOff = 0x01,
       ZeroOff    = 0x02,
       XorOff     = 0x04,
@@ -61,15 +45,15 @@ enum class Logic : uint8_t {
       LatchOff   = 0x10,
       ClockOff   = 0x20,
 
-      _numTypes = 6,
-      _ink_on   = 0x80,
+      _numTypes  = 6,
+      _ink_on    = 0x80,
 
-      NonZero = NonZeroOff | _ink_on,
-      Zero    = ZeroOff    | _ink_on,
-      Xor     = XorOff     | _ink_on,
-      Xnor    = XnorOff    | _ink_on,
-      Latch   = LatchOff   | _ink_on,
-      Clock   = ClockOff   | _ink_on,
+      NonZero    = NonZeroOff | _ink_on,
+      Zero       = ZeroOff    | _ink_on,
+      Xor        = XorOff     | _ink_on,
+      Xnor       = XnorOff    | _ink_on,
+      Latch      = LatchOff   | _ink_on,
+      Clock      = ClockOff   | _ink_on,
 };
 
 
@@ -165,31 +149,32 @@ enum class Ink : uint8_t {
 
 template <typename T> concept Integral = std::is_integral<T>::value;
 
-ND OVCB_INLINE Logic operator>>(Logicc val,  uintc  n)    { return static_cast<Logic>(static_cast<uint>(val) >> n); }
-ND OVCB_INLINE Logic operator<<(Logicc val,  uintc  n)    { return static_cast<Logic>(static_cast<uint>(val) << n); }
-ND OVCB_INLINE Logic operator& (Logicc val1, uintc  val2) { return static_cast<Logic>(static_cast<uint>(val1) & val2); }
-ND OVCB_INLINE Logic operator| (Logicc val1, uintc  val2) { return static_cast<Logic>(static_cast<uint>(val1) | val2); }
+ND OVCB_INLINE Logic operator>>(Logicc val, uintc n)      { return static_cast<Logic>(static_cast<uint>(val) >> n); }
+ND OVCB_INLINE Logic operator<<(Logicc val, uintc n)      { return static_cast<Logic>(static_cast<uint>(val) << n); }
+ND OVCB_INLINE Logic operator& (Logicc val1, uintc val2)  { return static_cast<Logic>(static_cast<uint>(val1) & val2); }
+ND OVCB_INLINE Logic operator| (Logicc val1, uintc val2)  { return static_cast<Logic>(static_cast<uint>(val1) | val2); }
 ND OVCB_INLINE Logic operator& (Logicc val1, Logicc val2) { return static_cast<Logic>(static_cast<uint>(val1) & static_cast<uint>(val2)); }
 ND OVCB_INLINE Logic operator| (Logicc val1, Logicc val2) { return static_cast<Logic>(static_cast<uint>(val1) | static_cast<uint>(val2)); }
 
 template <typename T> requires Integral<T>
-ND OVCB_INLINE bool operator==(Logic const op1, T const op2)
+ND OVCB_INLINE bool
+operator==(Logic const op1, T const op2)
 {
       return op1 == static_cast<Logic>(op2);
 }
 
 
-ND OVCB_INLINE Ink operator>>(Inkc val,  uintc n)    { return static_cast<Ink>(static_cast<uint>(val) >> n); }
-ND OVCB_INLINE Ink operator<<(Inkc val,  uintc n)    { return static_cast<Ink>(static_cast<uint>(val) << n); }
+ND OVCB_INLINE Ink operator>>(Inkc val, uintc n)     { return static_cast<Ink>(static_cast<uint>(val) >> n); }
+ND OVCB_INLINE Ink operator<<(Inkc val, uintc n)     { return static_cast<Ink>(static_cast<uint>(val) << n); }
 ND OVCB_INLINE Ink operator& (Inkc val1, uintc val2) { return static_cast<Ink>(static_cast<uint>(val1) & val2); }
 ND OVCB_INLINE Ink operator| (Inkc val1, uintc val2) { return static_cast<Ink>(static_cast<uint>(val1) | val2); }
-ND OVCB_INLINE Ink operator& (Inkc val1, Inkc  val2) { return static_cast<Ink>(static_cast<uint>(val1) & static_cast<uint>(val2)); }
-ND OVCB_INLINE Ink operator| (Inkc val1, Inkc  val2) { return static_cast<Ink>(static_cast<uint>(val1) | static_cast<uint>(val2)); }
-
-ND OVCB_INLINE int operator+(Inkc val1, intc val2) { return static_cast<int>(val1) + val2; }
+ND OVCB_INLINE Ink operator& (Inkc val1, Inkc val2)  { return static_cast<Ink>(static_cast<uint>(val1) & static_cast<uint>(val2)); }
+ND OVCB_INLINE Ink operator| (Inkc val1, Inkc val2)  { return static_cast<Ink>(static_cast<uint>(val1) | static_cast<uint>(val2)); }
+ND OVCB_INLINE int operator+ (Inkc val1, intc val2)  { return static_cast<int>(val1) + val2; }
 
 template <typename T> requires Integral<T>
-ND OVCB_INLINE bool operator==(Ink const op1, T const op2)
+ND OVCB_INLINE bool
+operator==(Ink const op1, T const op2)
 {
       return op1 == static_cast<Ink>(op2);
 }
@@ -252,11 +237,13 @@ ND OVCB_INLINE Ink setOn(Ink const ink)
 {
       return ink | Ink::_ink_on;
 }
+
 // Sets the ink type to be off
 ND OVCB_INLINE Ink setOff(Ink const ink)
 {
       return ink & 0x7F;
 }
+
 // Gets the ink active state
 ND OVCB_INLINE bool getOn(Ink const ink)
 {
@@ -300,21 +287,11 @@ extern char const *getInkString(Ink ink);
 /*--------------------------------------------------------------------------------------*/
 
 
-struct InkState
-{
-#ifdef OVCB_MT
-      std::atomic<int16_t> activeInputs; // Number of active inputs
-      std::atomic<uint8_t> visited;      // Flags for traversal
-#else
+struct InkState {
       int16_t activeInputs; // Number of active inputs
       bool    visited;      // Flags for traversal
-#endif
-      Logic logic; // Current logic state
+      Logic   logic;        // Current logic state
 };
-
-/* Paranoia. */
-static_assert(sizeof(InkState) == 4 && offsetof(InkState, logic) == 3);
-
 
 struct SparseMat {
       int  n;    // Size of the matrix
@@ -323,7 +300,6 @@ struct SparseMat {
       int *rows; // CSC sparse matrix rows
 };
 
-
 // This represents a pixel with meta data as well as simulation ink type
 // Ths is for inks that have variants which do not affect simulation
 // i.e. Colored traces.
@@ -331,9 +307,6 @@ struct InkPixel {
       Ink     ink;
       int16_t meta;
 };
-
-static_assert(sizeof(InkPixel) == 4 && offsetof(InkPixel, meta) == 2);
-
 
 // This is for asyncronous exchange of data.
 // for stuff like audio and signal scopes
@@ -349,6 +322,104 @@ struct SimulationResult {
       bool    breakpoint;
 };
 
+struct LatchInterface {
+      glm::ivec2 pos;     // Coordinates of the LSB latch.
+      glm::ivec2 stride;  // Space between each latch (both x and y).
+      glm::ivec2 size;    // Physical ize of the latch in squares as (x,y) pair.
+      int        numBits; // Value always 32 or lower
+      int        gids[64];
+};
+
+
+constexpr bool
+operator==(InkPixel const &first, InkPixel const &second) noexcept
+{
+      return first.ink == second.ink && first.meta == second.meta;
+}
+
+
+/* Paranoia. */
+static_assert(sizeof(InkState)  == 4 && offsetof(InkState, logic) == 3);
+static_assert(sizeof(InkPixel)  == 4 && offsetof(InkPixel, meta) == 2);
+static_assert(sizeof(SparseMat) == 24);
+static_assert(sizeof(InstrumentBuffer) == 16);
+static_assert(sizeof(SimulationResult) == 16);
+static_assert(sizeof(LatchInterface) == SIZE_C(284));
+
+
+/*--------------------------------------------------------------------------------------*/
+
+
+struct string_array {
+      char   **list;
+      uint32_t max;
+      uint32_t qty = 0;
+
+      explicit string_array(uint32_t const max = 32)
+            : list(new char *[max]), max(max)
+      {
+            memset(list, 0, max * sizeof(char *));
+      }
+
+      ~string_array()
+      {
+            if (list) {
+                  for (unsigned i = 0; i < qty; ++i) {
+                        delete[] list[i];
+                        list[i] = nullptr;
+                  }
+                  delete[] list;
+                  max = qty = 0;
+                  list = nullptr;
+            }
+      }
+
+      string_array(string_array const &)                = delete;
+      string_array &operator=(string_array const &)     = delete;
+      string_array(string_array &&) noexcept            = delete;
+      string_array &operator=(string_array &&) noexcept = delete;
+
+
+      void destroy()
+      {
+            this->~string_array();
+      }
+
+      ND char *push_blank(size_t const len)
+      {
+            if (qty + 1 == max) {
+                  max += 8;
+                  auto **tmp = new char *[max];
+                  std::copy_n(list, qty, tmp);
+                  delete[] list;
+                  list = tmp;
+            }
+
+            auto *str = new char[len + 1];
+            list[qty++] = str;
+            return str;
+      }
+
+      void push(char const *orig, size_t const len)
+      {
+            char *str = push_blank(len);
+            memcpy(str, orig, len + 1);
+      }
+
+      ND char **  data() const { return list; }
+      ND uint32_t size() const { return qty; }
+
+      void push(char const *orig)             { push(orig,        strlen(orig)); }
+      void push(std::string const &orig)      { push(orig.data(), orig.size());  }
+      void push(std::string_view const &orig) { push(orig.data(), orig.size());  }
+
+      template <size_t N>
+      void push(char const (&str)[N])
+      {
+            push(str, N);
+      }
+};
+
 
 /*--------------------------------------------------------------------------------------*/
 
@@ -360,16 +431,16 @@ class Project
 {
     public:
       // This remains null if VMem is not actually used.
-      VMemWrapper vmem = nullptr;
+      VMemWrapper vmem         = nullptr;
+      uint64_t    vmemSize     = 0;
+      uint64_t    lastVMemAddr = 0;
 
-      size_t         vmemSize     = 0;
-      std::string    assembly     = {};
-      LatchInterface vmAddr       = {};
-      LatchInterface vmData       = {};
-      uint32_t       lastVMemAddr = 0;
-      int32_t        height       = 0;
-      int32_t        width        = 0;
-      int32_t        numGroups    = 0;
+      LatchInterface vmAddr    = {{}, {}, {}, -1, {}};
+      LatchInterface vmData    = {{}, {}, {}, -1, {}};
+      std::string    assembly  = {};
+      int32_t        height    = 0;
+      int32_t        width     = 0;
+      int32_t        numGroups = 0;
 
       // An image containing component indices.
       uint8_t  *originalImage = nullptr;
@@ -387,12 +458,12 @@ class Project
       };
 
       std::vector<int32_t> clockGIDs;
-      uint64_t             clockCounter = 0;
-      uint64_t             clockPeriod  = 2;
+      uint32_t             clockCounter = 0;
+      uint32_t             clockPeriod  = 2;
 
       // Adjacentcy matrix.
       // By default, the indices from ink groups first and then component groups.
-      SparseMat writeMap = {};
+      SparseMat writeMap = {0, 0, nullptr, nullptr};
 
       // Stores the logic states of each group.
       InkState *states = nullptr;
@@ -409,14 +480,12 @@ class Project
       uint64_t tickNum = 0;
 
       // Event queue
-      int32_t *updateQ[2]{nullptr, nullptr};
+      int32_t *updateQ[2]       = {nullptr, nullptr};
       int16_t *lastActiveInputs = nullptr;
+      uint32_t qSize            = 0;
+      bool     states_is_native = false;
 
-#ifdef OVCB_MT
-      std::atomic<uint32_t> qSize;
-#else
-      uint32_t qSize = 0;
-#endif
+      string_array *error_messages = nullptr;
 
       //---------------------------------------------------------------------------------
 
@@ -474,31 +543,47 @@ class Project
       [[__gnu__::__hot__]]
       SimulationResult tick(int32_t numTicks = 1, int64_t maxEvents = INT64_MAX);
 
-      /// Emits an event if it is not yet in the queue.
-      [[__gnu__::__hot__]]
-      OVCB_INLINE bool tryEmit(uint32_t const gid)
-      {
-            // Check if this event is already in queue.
-#ifdef OVCB_MT
-            uint8_t expect = 0;
-            if (states[gid].visited.compare_exchange_strong(expect, 1,
-                                                            std::memory_order::relaxed))
-            {
-                  updateQ[1][qSize.fetch_add(1, std::memory_order::relaxed)] = gid;
-                  return true;
-            }
-            return false;
-#else
-            if (states[gid].visited)
-                  return false;
-            states[gid].visited = true;
-            updateQ[1][qSize++] = gid;
-            return true;
-#endif
-      }
+      //---------------------------------------------------------------------------------
 
     private:
+      /// Emits an event if it is not yet in the queue.
+      [[__gnu__::__hot__]]
+      OVCB_INLINE bool tryEmit(int32_t gid);
+
       OVCB_INLINE void handleVMemTick();
+
+      //---------------------------------------------------------------------------------
+
+      class ClockCounter
+      {
+          public:
+            ClockCounter(uint16_t const low, uint16_t const high)
+                  : low_period_(low),
+                    high_period_(high)
+            {}
+
+            ND int  counter() const { return counter_; }
+            ND bool is_zero() const { return counter_ == 0; }
+            ND int  limit() const { return state_ ? low_period_ : high_period_; }
+
+            bool increment()
+            {
+                  if (counter_ + 1 == limit()) {
+                        counter_ = 0;
+                        state_   = !state_;
+                        return true;
+                  }
+
+                  ++counter_;
+                  return false;
+            }
+
+          private:
+            uint16_t counter_ = 0;
+            uint16_t low_period_;
+            uint16_t high_period_;
+            bool     state_ = false;
+      };
 };
 
 

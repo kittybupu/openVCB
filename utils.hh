@@ -46,13 +46,22 @@
 # define _CRT_INTERNAL_NONSTDC_NAMES 1
 #endif
 
+//#define GLM_FORCE_MESSAGES 1
+//#define GLM_FORCE_INLINE 1
+#define GLM_HAS_IF_CONSTEXPR 1
+#define GLM_HAS_CONSTEXPR 1
+//#define GLM_FORCE_AVX2 1
+//#define GLM_FORCE_INTRINSICS 1
+
 /*--------------------------------------------------------------------------------------*/
 
+// ReSharper disable CppUnusedIncludeDirective
 #ifdef __cplusplus
 
 # include <algorithm>
 # include <array>
 # include <atomic>
+# include <bit>
 # include <chrono>
 # include <concepts>
 # include <exception>
@@ -60,14 +69,19 @@
 # include <forward_list>
 # include <fstream>
 # include <iostream>
+# include <istream>
 # include <iterator>
+# include <limits>
 # include <limits>
 # include <list>
 # include <map>
 # include <memory>
 # include <mutex>
+# include <numeric>
+# include <ostream>
 # include <queue>
 # include <random>
+# include <ranges>
 # include <set>
 # include <sstream>
 # include <stack>
@@ -92,6 +106,26 @@
 # include <cstdio>
 # include <cstdlib>
 # include <cstring>
+# include <cwchar>
+
+#if 0
+# define FMT_HEADER_ONLY 1
+# define FMT_USE_USER_DEFINED_LITERALS 0
+# define FMT_USE_NONTYPE_TEMPLATE_ARGS 1
+# define FMT_USE_FULL_CACHE_DRAGONBOX  1
+# define FMT_INLINE   __forceinline
+# define FMT_NOINLINE __declspec(noinline)
+# include <fmt/format.h>
+# include <fmt/format-inl.h>
+# include <fmt/args.h>
+# include <fmt/color.h>
+# include <fmt/compile.h>
+# include <fmt/os.h>
+# include <fmt/ostream.h>
+# include <fmt/ranges.h>
+# include <fmt/std.h>
+# include <fmt/xchar.h>
+#endif
 
 #else // not C++
 
@@ -107,8 +141,10 @@
 # include <stdio.h>
 # include <stdlib.h>
 # include <string.h>
+# include <wchar.h>
 
 #endif // defined __cplusplus
+// ReSharper restore CppUnusedIncludeDirective
 
 /*--------------------------------------------------------------------------------------*/
 
@@ -149,11 +185,11 @@
 # define DEPRECATED        [[deprecated]]
 # define DEPRECATED_MSG(x) [[deprecated(x)]]
 #  ifdef _MSC_VER
-#   define NORETURN        [[noreturn]] _Analysis_noreturn_ 
+#   define NORETURN        [[noreturn]]
 #  else
 #   define NORETURN        [[noreturn]]
 #  endif
-#elif defined __GNUC__ || defined __clang__
+#elif defined __GNUC__ || defined __clang__ || defined __INTEL_COMPILER || defined __INTEL_LLVM_COMPILER
 # define UNUSED            __attribute__((__unused__))
 # define NODISCARD         __attribute__((__warn_unused_result__))
 # define FALLTHROUGH       __attribute__((__fallthrough__))
@@ -189,6 +225,7 @@
 # if !defined __forceinline && !(defined _MSC_VER || defined __INTEL_LLVM_COMPILER)
 #  define __forceinline __always_inline
 # endif
+# define NOINLINE __attribute__((__noinline__))
 #elif defined _MSC_VER
 # define NOINLINE __declspec(noinline)
 #else
@@ -237,22 +274,27 @@
 # endif
 #endif
 
-#ifdef _WIN32
-# include <basetsd.h>
-typedef SSIZE_T ssize_t;
-#endif
 typedef unsigned int  uint;
 typedef unsigned char uchar;
 typedef signed char   schar;
+typedef intptr_t      ssize_t;
+
+#if __WORDSIZE == 64
+#  define SIZE_C(n) UINT64_C(n)
+#elif __WORDSIZE == 32
+#  define SIZE_C(n) UINT32_C(n)
+#else
+#  define SIZE_C(n) UINT16_C(n)
+#endif
 
 /*======================================================================================*/
 
 #ifdef __cplusplus
 namespace openVCB {
-using namespace std::literals;
+using namespace ::std::literals;
 namespace util {
 
-extern int logf(PRINTF_FORMAT_STRING format, ...) ATTRIBUTE_PRINTF(1, 2);
+extern void logf(PRINTF_FORMAT_STRING format, ...) ATTRIBUTE_PRINTF(1, 2);
 
 template <typename T1>
 constexpr bool eq_any(T1 const &left, T1 const &right)
@@ -266,28 +308,31 @@ constexpr bool eq_any(T1 const &left, T1 const &right, Types const &...rest)
       return left == right || eq_any(left, rest...);
 }
 
+namespace impl {
+
 template <typename>
 inline constexpr bool always_false = false;
 
-
-namespace impl {
-
 # if (defined __GNUC__ || defined __clang__ || defined __INTEL_COMPILER) || \
      (__has_builtin(__builtin_bswap16) && __has_builtin(__builtin_bswap32) && __has_builtin(__builtin_bswap64))
-ND inline uint16_t bswap_native_16(uint16_t const val) { return __builtin_bswap16(val); }
-ND inline uint32_t bswap_native_32(uint32_t const val) { return __builtin_bswap32(val); }
-ND inline uint64_t bswap_native_64(uint64_t const val) { return __builtin_bswap64(val); }
+NODISCARD inline uint16_t bswap_native_16(uint16_t const val) { return __builtin_bswap16(val); }
+NODISCARD inline uint32_t bswap_native_32(uint32_t const val) { return __builtin_bswap32(val); }
+NODISCARD inline uint64_t bswap_native_64(uint64_t const val) { return __builtin_bswap64(val); }
 # elif defined _MSC_VER
-ND inline uint16_t bswap_native_16(uint16_t const val) { return _byteswap_ushort(val); }
-ND inline uint32_t bswap_native_32(uint32_t const val) { return _byteswap_ulong(val); }
-ND inline uint64_t bswap_native_64(uint64_t const val) { return _byteswap_uint64(val); }
+NODISCARD inline uint16_t bswap_native_16(uint16_t const val) { return _byteswap_ushort(val); }
+NODISCARD inline uint32_t bswap_native_32(uint32_t const val) { return _byteswap_ulong(val); }
+NODISCARD inline uint64_t bswap_native_64(uint64_t const val) { return _byteswap_uint64(val); }
+# elif __cplusplus > 202002L && false
+NODISCARD inline uint16_t bswap_native_16(uint16_t const val) { return ::std::byteswap(val); }
+NODISCARD inline uint32_t bswap_native_32(uint32_t const val) { return ::std::byteswap(val); }
+NODISCARD inline uint64_t bswap_native_64(uint64_t const val) { return ::std::byteswap(val); }
 # else
 #  define NO_bswap_SUPPORT
 # endif
 
-ND constexpr uint16_t bswap_16(uint16_t const val) noexcept {
+NODISCARD constexpr uint16_t bswap_16(uint16_t const val) noexcept {
 # ifndef NO_bswap_SUPPORT
-      if (std::is_constant_evaluated())
+      if (::std::is_constant_evaluated())
 # endif
             return static_cast<unsigned short>((val << 8) | (val >> 8));
 # ifndef NO_bswap_SUPPORT
@@ -296,10 +341,10 @@ ND constexpr uint16_t bswap_16(uint16_t const val) noexcept {
 # endif
 }
 
-ND constexpr uint32_t bswap_32(uint32_t const val) noexcept
+NODISCARD constexpr uint32_t bswap_32(uint32_t const val) noexcept
 {
 # ifndef NO_bswap_SUPPORT
-      if (std::is_constant_evaluated())
+      if (::std::is_constant_evaluated())
 # endif
             return (val << 24) | ((val << 8) & 0x00FF'0000) | ((val >> 8) & 0x0000'FF00) | (val >> 24);
 # ifndef NO_bswap_SUPPORT
@@ -308,9 +353,9 @@ ND constexpr uint32_t bswap_32(uint32_t const val) noexcept
 # endif
 }
 
-ND constexpr uint64_t bswap_64(uint64_t const val) noexcept {
+NODISCARD constexpr uint64_t bswap_64(uint64_t const val) noexcept {
 # ifndef NO_bswap_SUPPORT
-      if (std::is_constant_evaluated())
+      if (::std::is_constant_evaluated())
 # endif
             return ((val << 56) & 0xFF00'0000'0000'0000) |
                    ((val << 40) & 0x00FF'0000'0000'0000) |
@@ -327,13 +372,13 @@ ND constexpr uint64_t bswap_64(uint64_t const val) noexcept {
 }
 
 template <typename T>
-concept Swappable = std::is_integral_v<T> && sizeof(T) <= 8;
+concept Swappable = ::std::is_integral_v<T> && sizeof(T) <= 8;
 
 } // namespace impl
 
 
 template <impl::Swappable T>
-ND constexpr T bswap(T const val) noexcept
+NODISCARD constexpr T bswap(T const val) noexcept
 {
       if constexpr (sizeof(T) == 1)
             return val;
@@ -344,47 +389,57 @@ ND constexpr T bswap(T const val) noexcept
       else if constexpr (sizeof(T) == 8)
             return static_cast<T>(impl::bswap_64(static_cast<uint64_t>(val)));
 
-      static_assert(always_false<T>, "Invalid integer size");
+      /* This isn't reachable but it shuts up dumber linters. */
+      static_assert(impl::always_false<T>, "Invalid integer size");
       return -1;
 }
 
 template <impl::Swappable T>
-ND constexpr T hton(T const val) noexcept
+NODISCARD constexpr T hton(T const val) noexcept
 {
-      if constexpr (std::endian::native == std::endian::little)
+      if constexpr (::std::endian::native == ::std::endian::little)
             return bswap(val);
       else
             return val;
 }
 
-ND inline intmax_t xatoi(char const *const ptr, int const base = 0) noexcept(false)
+template <impl::Swappable T>
+NODISCARD constexpr T ntoh(T const val) noexcept
+{
+      if constexpr (::std::endian::native == ::std::endian::little)
+            return bswap(val);
+      else
+            return val;
+}
+
+NODISCARD inline intmax_t xatoi(char const *const ptr, int const base = 0) noexcept(false)
 {
       char *eptr;
-      int  &errno_ref = errno; // Nonzero cost, pay it once
+      auto &errno_ref = errno;
       errno_ref       = 0;
 
       auto const ans = ::strtoimax(ptr, &eptr, base);
 
       if (ptr == eptr)
-            throw std::invalid_argument("Invalid atoi argument");
+            throw ::std::invalid_argument("Invalid atoi argument");
       if (errno_ref == ERANGE)
-            throw std::range_error("atoi argument out of range");
+            throw ::std::range_error("atoi argument out of range");
 
       return ans;
 }
 
-ND inline uintmax_t xatou(char const *const ptr, int const base = 0) noexcept(false)
+NODISCARD inline uintmax_t xatou(char const *const ptr, int const base = 0) noexcept(false)
 {
       char *eptr;
-      int  &errno_ref = errno; // Nonzero cost, pay it once
+      auto &errno_ref = errno;
       errno_ref       = 0;
 
       auto const ans = ::strtoumax(ptr, &eptr, base);
 
       if (ptr == eptr)
-            throw std::invalid_argument("Invalid atou argument");
+            throw ::std::invalid_argument("Invalid atou argument");
       if (errno_ref == ERANGE)
-            throw std::range_error("atou argument out of range");
+            throw ::std::range_error("atou argument out of range");
 
       return ans;
 }

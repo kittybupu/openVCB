@@ -1,22 +1,30 @@
 #include "openVCB.h"
 
+
+/*--------------------------------------------------------------------------------------*/
 namespace openVCB::util {
 
 static FILE *log = nullptr;
 
-int
-logf(PRINTF_FORMAT_STRING format, ...)
+void logf(PRINTF_FORMAT_STRING format, ...)
 {
+      if (!log)
+            return;
       va_list ap;
       va_start(ap, format);
-      int const ret = ::vfprintf(log, format, ap);
+      std::ignore = ::vfprintf(log, format, ap);
       va_end(ap);
-      return ret;
+      std::ignore = fputc('\n', log);
+      std::ignore = fflush(log);
 }
 
 } // namespace openVCB::util
+/*--------------------------------------------------------------------------------------*/
+
 
 #ifdef _WIN32
+# define WIN32_LEAN_AND_MEAN
+# define NOMINMAX
 # include <Windows.h>
 
 BOOL WINAPI
@@ -24,18 +32,28 @@ DllMain(HINSTANCE const inst, DWORD const fdwReason, LPVOID)
 {
       using namespace std::literals;
 
-      // Perform actions based on the reason for calling.
       switch (fdwReason) {
       case DLL_PROCESS_ATTACH: {
+            std::ignore = ::_set_abort_behavior(0, _WRITE_ABORT_MSG);
+            std::ignore = ::signal(SIGABRT, SIG_IGN);
+
             std::filesystem::path base;
             {
                   wchar_t fname[1024];
-                  if (::GetModuleFileNameW(inst, fname, std::size(fname)) == 0)
-                      break;
+                  if (::GetModuleFileNameW(inst, fname, std::size(fname)) == 0) {
+                        ::MessageBoxW(nullptr, L"Error determining openVCB.dll file path.", L"ERROR", MB_OK);
+                        ::exit(1);
+                  }
                   base = absolute(std::filesystem::path(fname).parent_path());
             }
+
             auto const path    = base / L"_openVCB.log"sv;
-            openVCB::util::log = _wfopen(path.c_str(), L"wt");
+            openVCB::util::log = _wfopen(path.c_str(), L"w");
+            if (!openVCB::util::log) {
+                  ::MessageBoxW(nullptr, L"Error opening openVCB.dll log file.", L"ERROR", MB_OK);
+                  ::exit(1);
+            }
+
             break;
       }
 

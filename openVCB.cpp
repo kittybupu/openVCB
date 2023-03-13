@@ -2,6 +2,8 @@
 
 #include "openVCB.h"
 
+extern "C" void openVCB_free_error_strings() noexcept;
+
 
 namespace openVCB {
 
@@ -29,20 +31,21 @@ Project::toggleLatch(int const gid)
 
 Project::~Project()
 {
+      if (states_is_native)
+            delete[] states;
       delete[] originalImage;
-      delete[] vmem.def();
-      delete[] image;
       delete[] indexImage;
       delete[] decoration[0];
       delete[] decoration[1];
       delete[] decoration[2];
       delete[] writeMap.ptr;
       delete[] writeMap.rows;
-      delete[] states;
       delete[] stateInks;
       delete[] updateQ[0];
       delete[] updateQ[1];
       delete[] lastActiveInputs;
+
+      openVCB_free_error_strings();
 }
 
 std::pair<Ink, int>
@@ -62,6 +65,18 @@ Project::sample(glm::ivec2 const pos) const
 
       type = (type & 0x7f) | static_cast<unsigned>(states[idx].logic & 0x80);
       return {type, idx};
+}
+
+void
+Project::addBreakpoint(int const gid)
+{
+      breakpoints[gid] = states[gid].logic;
+}
+
+void
+Project::removeBreakpoint(int const gid)
+{
+      breakpoints.erase(gid);
 }
 
 

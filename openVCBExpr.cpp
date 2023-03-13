@@ -7,15 +7,13 @@
 #include "openVCBExpr.hh"
 
 
-namespace openVCB {
-
-
+namespace openVCB
+{
 using SymMap = std::map<std::string, int64_t>;
 
 enum types : uint8_t { DELIMITER = 1, VARIABLE };
 
-class parser
-{
+class parser {
       char *exp_ptr;    // points to the expression
       char  token[512]; // holds current token
       char  tok_type;   // holds token's type
@@ -34,7 +32,7 @@ class parser
       void get_token();
 
       template <size_t SrcSize>
-      requires(sizeof errormsg >= SrcSize)
+            requires(sizeof errormsg >= SrcSize)
       __inline constexpr void setError(char const (&src)[SrcSize])
       {
             ::memcpy(errormsg, src, SrcSize);
@@ -48,12 +46,14 @@ public:
       int64_t  eval_expr(char *exp);
 
       ND char const *getError() const { return errormsg; }
-      ND explicit operator bool() const { return errormsg[0] == '\0'; }
+      ND explicit    operator bool() const { return errormsg[0] == '\0'; }
 };
 
 // Parser constructor.
 parser::parser(SymMap &vars)
-      : exp_ptr(nullptr), tok_type(0), vars(vars)
+      : exp_ptr(nullptr),
+        tok_type(0),
+        vars(vars)
 {
       errormsg[0] = '\0';
       token[0]    = '\0';
@@ -135,7 +135,7 @@ parser::eval_expr4(int64_t &result)
             case '<':
                   result = result << temp;
                   break;
-            default:;
+            default: ;
             }
       }
 }
@@ -157,7 +157,7 @@ parser::eval_expr5(int64_t &result)
             case '+':
                   result = result + temp;
                   break;
-            default:;
+            default: ;
             }
       }
 }
@@ -183,7 +183,7 @@ parser::eval_expr6(int64_t &result)
             case '%':
                   result = result % temp;
                   break;
-            default:;
+            default: ;
             }
       }
 }
@@ -192,7 +192,8 @@ void
 parser::eval_expr7(int64_t &result)
 {
       char op = 0;
-      if (tok_type == DELIMITER && (*token == '!' || *token == '~' || *token == '+' || *token == '-')) {
+      if (tok_type == DELIMITER && (*token == '!' || *token == '~' || *token == '+' || *
+                                    token == '-')) {
             op = *token;
             get_token();
       }
@@ -208,7 +209,7 @@ parser::eval_expr7(int64_t &result)
             // MSVC complains unless three exclamation points are used.
             result = !!!result;
             break;
-      default:;
+      default: ;
       }
 }
 
@@ -252,7 +253,8 @@ parser::eval_expr8(int64_t &result)
                         if (endp && *endp != '\0')
                               formatError("Invalid character \"%c\" in number", *endp);
                         else if (result > UINT32_MAX)
-                              formatError("Number \"%jd\" is too large to fit in 32-bits", result);
+                              formatError("Number \"%jd\" is too large to fit in 32-bits",
+                                          result);
                         else if (e == ERANGE)
                               setError("Number is out of range");
                   }
@@ -327,7 +329,7 @@ parser::formatError(PRINTF_FORMAT_STRING fmt, ...)
 int64_t
 evalExpr(char const *expr, SymMap &symbols, char *errp, size_t const errSize)
 {
-      parser p(symbols);
+      parser        p(symbols);
       int64_t const res = p.eval_expr(const_cast<char *>(expr));
 
       if (!p) {
@@ -339,6 +341,4 @@ evalExpr(char const *expr, SymMap &symbols, char *errp, size_t const errSize)
 
       return res;
 }
-
-
 } // namespace openVCB

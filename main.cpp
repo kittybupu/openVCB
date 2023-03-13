@@ -1,4 +1,3 @@
-
 #include "openVCB.h"
 #include <chrono>
 #include <memory>
@@ -15,57 +14,62 @@
 # error "Wrong version clang, you moron."
 #endif
 
-namespace lazy {
-
+namespace lazy
+{
 template <typename T> concept HasDuration = requires { typename T::duration; };
-template <typename T> concept HasRep      = requires { typename T::rep; };
+template <typename T> concept HasRep = requires { typename T::rep; };
 
 template <typename Tp>
-    requires HasDuration<Tp> && HasRep<Tp>
-class tagged_time_point
-{
-      using this_type  = tagged_time_point<Tp>;
+      requires HasDuration<Tp> && HasRep<Tp>
+class tagged_time_point {
+      using this_type = tagged_time_point<Tp>;
       using time_point = Tp;
-      using duration   = typename Tp::duration;
-      using rep        = typename Tp::rep;
+      using duration = typename Tp::duration;
+      using rep = typename Tp::rep;
 
       static constexpr bool arith_ = std::is_arithmetic_v<rep>;
 
       std::string_view name_{};
       time_point const time_{};
 
-    public:
+public:
       tagged_time_point() = default;
+
       tagged_time_point(std::string_view const name, time_point time)
-          : name_(name), time_(std::move(time))
-      {}
+            : name_(name),
+              time_(std::move(time))
+      {
+      }
 
       template <typename T>
-      constexpr auto operator-(tagged_time_point<T> const &other) const noexcept(arith_ && other.arith_)
+      constexpr auto operator-(
+            tagged_time_point<T> const &other) const noexcept(arith_ && other.arith_)
       {
             return time_ - other.time_;
       }
 
-      ND constexpr std::string_view const &name()   const & noexcept { return name_; }
-      ND constexpr char const             *name_c() const   noexcept { return name_.data(); }
+      ND constexpr std::string_view const &name() const & noexcept { return name_; }
+      ND constexpr char const *name_c() const noexcept { return name_.data(); }
 
       ND auto const &tp() const & noexcept { return time_; }
-      ND auto       &tp()       & noexcept { return time_; }
+      ND auto &      tp() & noexcept { return time_; }
 };
 
 template <typename Ty>
-    requires std::derived_from<Ty, std::chrono::duration<typename Ty::rep, typename Ty::period>>
-constexpr double dur_to_dbl(Ty const &dur) noexcept
+      requires std::derived_from<Ty, std::chrono::duration<
+                                       typename Ty::rep, typename Ty::period>>
+constexpr double
+dur_to_dbl(Ty const &dur) noexcept
 {
       return std::chrono::duration_cast<std::chrono::duration<double>>(dur).count();
 }
 
 template <typename Elem, size_t Num>
-constexpr auto fwrite_l(Elem const (&buf)[Num], FILE *dest)
+constexpr auto
+fwrite_l(Elem const (&buf)[Num], FILE *dest)
 {
       return ::fwrite(buf, sizeof(Elem), Num - 1, dest);
 }
-
 } // namespace lazy
 
 

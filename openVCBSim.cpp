@@ -32,7 +32,7 @@ namespace openVCB {
 
 [[__gnu__::__hot__]]
 SimulationResult
-Project::tick(int const numTicks, int64_t const maxEvents)
+Project::tick(int32_t const numTicks, int64_t const maxEvents)
 {
       SimulationResult res{};
 
@@ -42,22 +42,17 @@ Project::tick(int const numTicks, int64_t const maxEvents)
                   return res;
 
             for (auto &[index, bp_logic] : breakpoints) {
-                  auto const &state = states[index];
-                  if (state.logic != bp_logic) {
-                        bp_logic       = state.logic;
+                  auto const &[_0, _1, logic] = states[index];
+                  if (logic != bp_logic) {
+                        bp_logic       = logic;
                         res.breakpoint = true;
                   }
             }
             if (res.breakpoint)
                   return res;
 
-            for (auto const &[buffer, bufferSize, idx] : instrumentBuffers) {
-#ifdef OVCB_MT
-                  memmove(&buffer[tickNum % bufferSize], &states[idx], sizeof(InkState));
-#else
+            for (auto const &[buffer, bufferSize, idx] : instrumentBuffers)
                   buffer[tickNum % bufferSize] = states[idx];
-#endif
-            }
             ++tickNum;
 
             // VMem implementation.
@@ -65,8 +60,8 @@ Project::tick(int const numTicks, int64_t const maxEvents)
                   handleVMemTick();
 
             // Update the clock ink
-            if (++clockCounter >= clockPeriod)
-                  clockCounter = 0;
+            clockCounter + 1 >= clockPeriod ? clockCounter = 0
+                                            : ++clockCounter;
             if (clockCounter < 2)
                   for (auto const gid : clockGIDs)
                         if (!states[gid].visited)
@@ -81,7 +76,7 @@ Project::tick(int const numTicks, int64_t const maxEvents)
 
                   // Copy over the current number of active inputs
                   for (uint i = 0; i < numEvents; ++i) {
-                        int const   gid = updateQ[0][i];
+                        int   const gid = updateQ[0][i];
                         Logic const ink = states[gid].logic;
 
                         // Reset visited flag
@@ -93,24 +88,21 @@ Project::tick(int const numTicks, int64_t const maxEvents)
                               states[gid].activeInputs = 0;
                   }
 
-#ifdef OVCB_MT
-# pragma omp parallel for schedule(static, 4 * 1024) num_threads(2) if (numEvents > 8 * 1024)
-#endif
                   // Main update loop
                   for (uint i = 0; i < numEvents; ++i) {
-                        int const   gid        = updateQ[0][i];
+                        int   const gid        = updateQ[0][i];
                         Logic const curInk     = states[gid].logic;
-                        bool const  lastActive = getOn(curInk);
-                        int const   lastInputs = lastActiveInputs[i];
+                        bool  const lastActive = getOn(curInk);
+                        int   const lastInputs = lastActiveInputs[i];
                         bool        nextActive;
 
-                        switch (setOff(curInk)) {
-                        case Logic::NonZeroOff: nextActive = lastInputs != 0;                    break;
-                        case Logic::ZeroOff:    nextActive = lastInputs == 0;                    break;
-                        case Logic::XorOff:     nextActive = lastInputs % 2;                     break;
-                        case Logic::XnorOff:    nextActive = !(lastInputs % 2);                  break;
-                        case Logic::LatchOff:   nextActive = int(lastActive) ^ (lastInputs % 2); break;
-                        case Logic::ClockOff:   nextActive = clockCounter == 0;                  break;
+                        switch (setOff(curInk)) {  // NOLINT(clang-diagnostic-switch-enum)
+                        case Logic::NonZeroOff: nextActive = lastInputs != 0;                  break;
+                        case Logic::ZeroOff:    nextActive = lastInputs == 0;                  break;
+                        case Logic::XorOff:     nextActive = lastInputs % 2;                   break;
+                        case Logic::XnorOff:    nextActive = !(lastInputs % 2);                break;
+                        case Logic::LatchOff:   nextActive = int(lastActive) ^ lastInputs % 2; break;
+                        case Logic::ClockOff:   nextActive = clockCounter == 0;                break;
                         default:                nextActive = false;
                         }
 
@@ -122,11 +114,11 @@ Project::tick(int const numTicks, int64_t const maxEvents)
                         states[gid].logic = setOn(curInk, nextActive);
 
                         // Loop over neighbors
-                        int const     delta = nextActive ? 1 : -1;
+                        int     const delta = nextActive ? 1 : -1;
                         int32_t const end   = writeMap.ptr[gid + 1];
 
-                        for (int32_t r = writeMap.ptr[gid]; r < end; ++r) {
-                              auto const  nxtId  = static_cast<uint>(writeMap.rows[r]);
+                        for (int n = writeMap.ptr[gid]; n < end; ++n) {
+                              auto  const nxtId  = writeMap.rows[n];
                               Logic const nxtInk = setOff(states[nxtId].logic);
 
                               // Ignore falling edge for latches
@@ -134,12 +126,8 @@ Project::tick(int const numTicks, int64_t const maxEvents)
                                     continue;
 
                               // Update actives
-#ifdef OVCB_MT
-                              int const lastNxtInput = states[nxtId].activeInputs.fetch_add(delta, std::memory_order::relaxed);
-#else
                               int const lastNxtInput     = states[nxtId].activeInputs;
                               states[nxtId].activeInputs = int16_t(lastNxtInput + delta);
-#endif
                               static constexpr Logic XOR_XNOR = Logic::XorOff | Logic::XnorOff;
 
                               // Inks have convenient "critical points"
@@ -157,17 +145,18 @@ Project::tick(int const numTicks, int64_t const maxEvents)
       return res;
 }
 
-void
-Project::addBreakpoint(int const gid)
+
+OVCB_INLINE bool
+Project::tryEmit(int32_t const gid)
 {
-      breakpoints[gid] = states[gid].logic;
+      // Check if this event is already in queue.
+      if (states[gid].visited)
+            return false;
+      states[gid].visited = true;
+      updateQ[1][qSize++] = gid;
+      return true;
 }
 
-void
-Project::removeBreakpoint(int const gid)
-{
-      breakpoints.erase(gid);
-}
 
 OVCB_INLINE void
 Project::handleVMemTick()

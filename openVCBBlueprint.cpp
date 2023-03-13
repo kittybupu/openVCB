@@ -1,16 +1,15 @@
 #include "openVCB.h"
 
 
-namespace openVCB {
-
-
+namespace openVCB
+{
 static constexpr uint32_t B64index[256] = {
-    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-    0,  62, 63, 62, 62, 63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 0,  0,  0,  0,  0,
-    0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17, 18,
-    19, 20, 21, 22, 23, 24, 25, 0,  0,  0,  0,  63, 0,  26, 27, 28, 29, 30, 31, 32, 33,
-    34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 62, 63, 62, 62, 63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 0, 0, 0, 0, 0,
+      0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+      19, 20, 21, 22, 23, 24, 25, 0, 0, 0, 0, 63, 0, 26, 27, 28, 29, 30, 31, 32, 33,
+      34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51
 };
 
 std::vector<uint8_t>
@@ -21,12 +20,11 @@ b64decode(std::string const &data)
       size_t const   size   = ((len + 3) / 4 - pad) * 4;
       auto           result = std::vector<uint8_t>(size / 4 * 3 + pad);
 
-      for (size_t i = 0, j = 0; i < size; i += 4)
-      {
-            uint32_t n = B64index[data[i]]   << 18 |
-                         B64index[data[i+1]] << 12 |
-                         B64index[data[i+2]] <<  6 |
-                         B64index[data[i+3]];
+      for (size_t i = 0, j = 0; i < size; i += 4) {
+            uint32_t n = B64index[data[i]] << 18 |
+                         B64index[data[i + 1]] << 12 |
+                         B64index[data[i + 2]] << 6 |
+                         B64index[data[i + 3]];
 
             result[j++] = n >> 16;
             result[j++] = n >> 8 & 0xFF;
@@ -98,7 +96,7 @@ Project::readFromBlueprint(std::string clipboardData) // XXX: Does this need to 
             return false;
 
       union char2int {
-            uint8_t const  *ch;
+            uint8_t const * ch;
             uint32_t const *i;
       };
       char2int const dummy = {.ch = logicData.data()};
@@ -110,6 +108,4 @@ Project::readFromBlueprint(std::string clipboardData) // XXX: Does this need to 
 
       return processLogicData(logicData, 32);
 }
-
-
 } // namespace openVCB
