@@ -47,11 +47,14 @@ class Preprocessor
       ND int32_t calc_index(int x, int y) const;
 
       void add_notfound_errmsg(glm::ivec2 neighbor, glm::ivec2 tunComp) const;
+      void add_invalid_tunnel_entrance_errmsg(glm::ivec2 origComp, glm::ivec2 tmpComp) const;
 
       /*--------------------------------------------------------------------------------*/
 
       Project      &p;
       ssize_t const canvas_size;
+
+      std::array<int, 4> wirelessIDs = {-1, -1, -1, -1};
 
       std::vector<glm::ivec2> stack;
       std::vector<glm::ivec2> bundleStack;
@@ -67,10 +70,13 @@ class Preprocessor
       std::unordered_set<int64_t>              conSet;
       std::vector<std::pair<int32_t, int32_t>> conList;
 
-      enum InkMask : unsigned {
-            MASK_READ   = 2U << 16,
-            MASK_WRITE  = 2U << 17,
-            MASK_TUNNEL = 2U << 18,
+      enum InkMask : uint32_t {
+            MASK_READ     = 2U << 16,
+            MASK_WRITE    = 2U << 17,
+            MASK_TUNNEL_1 = 2U << 18,
+            MASK_TUNNEL_2 = 2U << 19,
+            MASK_TUNNEL_3 = 2U << 20,
+            MASK_TUNNEL_4 = 2U << 21,
       };
 
       ND static unsigned get_tunnel_mask(uint const i) { return 2U << (18U + (i % 4U)); }
@@ -91,7 +97,7 @@ void
 Preprocessor::do_it()
 {
       delete p.error_messages;
-      p.error_messages = new string_array(32);
+      p.error_messages = new StringArray(32);
 
        // Turn off any inks that start as off
 #pragma omp parallel for schedule(static, 8192)
@@ -110,7 +116,7 @@ Preprocessor::do_it()
             case Ink::Random:    case Ink::Breakpoint:
             case Ink::Wireless1: case Ink::Wireless2:
             case Ink::Wireless3: case Ink::Wireless4:
-                  p.image[i].ink = setOff(p.image[i].ink);
+                  p.image[i].ink = SetOff(p.image[i].ink);
             }
       }
  
@@ -133,6 +139,8 @@ Preprocessor::do_it()
                   return a.gid < b.gid;
             return a.ink < b.ink;
       });
+      glm::ivec2 foo;
+      foo[0];
 
       // List of connections.
       // Build state vector.
@@ -211,7 +219,9 @@ Preprocessor::do_it()
       for (int i = 0; i < p.writeMap.n; ++i) {
             Ink const ink = p.stateInks[i];
             if (ink == Ink::ClockOff)
-                  p.clockGIDs.push_back(i);
+                  p.tickClock.GIDs.push_back(i);
+            else if (ink == Ink::TimerOff)
+                  p.realtimeClock.GIDs.push_back(i);
             else if (util::eq_any(ink, Ink::NandOff, Ink::NotOff, Ink::NorOff, Ink::XnorOff, Ink::Latch))
                   p.updateQ[0][p.qSize++] = i;
             if (ink == Ink::Latch)
@@ -226,30 +236,63 @@ Preprocessor::do_it()
 void
 Preprocessor::search(int const x, int const y)
 {
-      if (visited[calc_index(x, y)] & 1)
+      int const top_idx = calc_index(x, y);
+
+      if (visited[top_idx] & 1)
             return;
 
       // Check what ink this group is of
-      InkPixel const pix = p.image[calc_index(x, y)];
+      InkPixel const pix = p.image[top_idx];
       Ink            ink = pix.ink;
+      int            gid;
 
-      if (util::eq_any(ink, Ink::None, Ink::Cross, Ink::TunnelOff, Ink::Annotation, Ink::Filler))
+      switch (ink) {  // NOLINT(clang-diagnostic-switch-enum)
+      case Ink::None:
+      case Ink::Cross:
+      case Ink::TunnelOff:
+      case Ink::Annotation:
+      case Ink::Filler:
             return;
 
-      if (ink == Ink::ReadOff) {
+      case Ink::ReadOff:
             readInks.emplace_back(x, y);
             ink = Ink::TraceOff;
-      } else if (ink == Ink::WriteOff) {
+            gid = p.writeMap.n++;
+            break;
+
+      case Ink::WriteOff:
             writeInks.emplace_back(x, y);
             ink = Ink::TraceOff;
+            gid = p.writeMap.n++;
+            break;;
+
+      case Ink::Wireless1Off:
+      case Ink::Wireless2Off:
+      case Ink::Wireless3Off:
+      case Ink::Wireless4Off: {
+            auto const i = Ink::Wireless4Off - ink;
+            if (wirelessIDs[i] < 0) {
+                  gid = p.writeMap.n++;
+                  wirelessIDs[i] = gid;
+            } else {
+                  gid = wirelessIDs[i];
+            }
+            break;
       }
 
-      // Allocate new group id, increment.
-      auto const gid = p.writeMap.n++;
+      case Ink::BreakpointOff:
+            gid = p.writeMap.n++;
+            p.addBreakpoint(gid);
+            break;
+
+      default:
+            gid = p.writeMap.n++;
+            break;
+      }
 
       // DFS
       stack.emplace_back(x, y);
-      visited[calc_index(x, y)] |= 1;
+      visited[top_idx] |= 1;
 
       while (!stack.empty())
       {
@@ -287,8 +330,6 @@ Preprocessor::search(int const x, int const y)
 
                         if (newVis & 1) {
                               auto const otherIdx = p.indexImage[newIdx];
-                              if (otherIdx < 0)
-                                    __debugbreak();
                               auto const shifted  = static_cast<int64_t>(gid) << 32;
                               if (bundleConsSet.insert(shifted | gid).second)
                                     bundleCons.emplace(gid, otherIdx);
@@ -442,7 +483,7 @@ Preprocessor::handle_read_ink(glm::ivec2 const vec)
             auto const newIdx = calc_index(nvec);
             auto const ink  = p.image[newIdx].ink;
             // Ignore any bundles or clocks
-            if (ink == Ink::BusOff || ink == Ink::ClockOff)
+            if (ink == Ink::BusOff || ink == Ink::ClockOff || ink == Ink::TimerOff)
                   continue;
 
             auto const dstGID  = p.indexImage[newIdx];
@@ -552,13 +593,7 @@ Preprocessor::handle_tunnel(uint const    nindex,
             tunPix = p.image[tunIdx];
             if (tunPix == p.image[idx]) {
                   // BUG ERROR ERROR ERROR ERROR
-                  char *buf = p.error_messages->push_blank(256);
-                  auto const size = snprintf(
-                      buf, 256,
-                      "Error (%d, %d) -> (%d, %d): While searching for an exit, another "
-                      "tunnel entrance for the same ink was encountered.",
-                      origComp.x, origComp.y, tmpComp.x, tmpComp.y);
-                  p.error_messages->push(buf, size);
+                  add_invalid_tunnel_entrance_errmsg(origComp, tmpComp);
                   return false;
             }
       }
@@ -590,12 +625,26 @@ Preprocessor::add_notfound_errmsg(glm::ivec2 const neighbor,
                         : neighbor.x == -1 ? "west"
                         : neighbor.y == 1  ? "south"
                                            : "north";
-      char       *buf  = p.error_messages->push_blank(256);
-      auto const  size = snprintf(
+      char      *buf  = p.error_messages->push_blank(256);
+      auto const size = snprintf(
           buf, 256,
           R"(Error @ (%d, %d): No exit tunnel found in a search to the %s -- (%d, %d).)",
           tunComp.x, tunComp.y, dir, neighbor.x, neighbor.y);
-      p.error_messages->push(buf, size);
+      util::logs(buf, size);
+}
+
+
+void
+Preprocessor::add_invalid_tunnel_entrance_errmsg(glm::ivec2 const origComp,
+                                                 glm::ivec2 const tmpComp) const
+{
+      char      *buf = p.error_messages->push_blank(256);
+      auto const size = snprintf(
+            buf, 256,
+            "Error (%d, %d) -> (%d, %d): While searching for an exit, another "
+            "tunnel entrance for the same ink was encountered.",
+            origComp.x, origComp.y, tmpComp.x, tmpComp.y);
+      util::logs(buf, size);
 }
 
 
@@ -607,7 +656,7 @@ Project::preprocess()
 {
       Preprocessor pp(*this);
       pp.do_it();
-      util::logf("--------------------------------------------------------------------------------");
+      util::logs("--------------------------------------------------------------------------------", 80);
 }
 
 

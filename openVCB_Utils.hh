@@ -108,6 +108,8 @@
 # include <cstring>
 # include <cwchar>
 
+# include <glm/glm.hpp>
+
 #if 0
 # define FMT_HEADER_ONLY 1
 # define FMT_USE_USER_DEFINED_LITERALS 0
@@ -277,14 +279,16 @@
 typedef unsigned int  uint;
 typedef unsigned char uchar;
 typedef signed char   schar;
-typedef intptr_t      ssize_t;
 
 #if __WORDSIZE == 64
 #  define SIZE_C(n) UINT64_C(n)
+typedef int64_t ssize_t;
 #elif __WORDSIZE == 32
 #  define SIZE_C(n) UINT32_C(n)
+typedef int32_t ssize_t;
 #else
 #  define SIZE_C(n) UINT16_C(n)
+typedef int16_t ssize_t;
 #endif
 
 /*======================================================================================*/
@@ -295,6 +299,11 @@ using namespace ::std::literals;
 namespace util {
 
 extern void logf(PRINTF_FORMAT_STRING format, ...) ATTRIBUTE_PRINTF(1, 2);
+
+extern void logs(char const *msg, size_t len);
+extern void logs(char const *msg);
+inline void logs(std::string const &msg)     { logs(msg.data(), msg.size()); }
+inline void logs(std::string_view const msg) { logs(msg.data(), msg.size()); }
 
 template <typename T1>
 constexpr bool eq_any(T1 const &left, T1 const &right)

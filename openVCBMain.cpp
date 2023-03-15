@@ -18,6 +18,18 @@ void logf(PRINTF_FORMAT_STRING format, ...)
       std::ignore = fflush(log);
 }
 
+void logs(char const *msg, size_t const len)
+{
+      fwrite(msg, 1, len, log);
+      fputc('\n', log);
+}
+
+void logs(char const *msg)
+{
+      fputs(msg, log);
+      fputc('\n', log);
+}
+
 } // namespace openVCB::util
 /*--------------------------------------------------------------------------------------*/
 

@@ -5,56 +5,29 @@
 #ifndef C8kWpReCttGxHsWkLLl1RDjAweb3HDua
 #define C8kWpReCttGxHsWkLLl1RDjAweb3HDua
 
-#include "utils.hh"
-#include <glm/glm.hpp>
-
 // Toggle experimental byte addressed VMem.
 /* #undef OVCB_BYTE_ORIENTED_VMEM */
 
+#include "openVCB_Utils.hh"
 #include "openVCB_Data.hh"
-#include "openVCB_VMem.hh"
 
 #if defined _MSC_VER
-#  define OVCB_INLINE constexpr __forceinline
+#  define OVCB_CONSTEXPR constexpr __forceinline
+#  define OVCB_INLINE    __forceinline
 #  if !(defined __GNUC__ || defined __clang__ || defined __INTEL_COMPILER || defined __INTEL_LLVM_COMPILER)
 #    pragma warning(disable: 5030)  // Unrecognized attribute
 #  endif
 #elif defined __GNUC__ || defined __clang__
-#  define OVCB_INLINE __attribute__((__always_inline__)) constexpr inline
+#  define OVCB_CONSTEXPR __attribute__((__always_inline__)) constexpr inline
+#  define OVCB_INLINE    __attribute__((__always_inline__)) inline
 #else
-#  define OVCB_INLINE constexpr inline
+#  define OVCB_CONSTEXPR constexpr inline
+#  define OVCB_INLINE    inline
 #endif
 
 
 namespace openVCB {
 /****************************************************************************************/
-
-
-/**
- * @brief 8 bit state. 7 bit type + 1 active bit.
- * @note
- * - Add new logic behavior here. All inks define their logic from this.
- * - This is seperate from Ink to simplify switch logic
- */
-enum class Logic : uint8_t {
-      None       = 0,
-      NonZeroOff = 0x01,
-      ZeroOff    = 0x02,
-      XorOff     = 0x04,
-      XnorOff    = 0x08,
-      LatchOff   = 0x10,
-      ClockOff   = 0x20,
-
-      _numTypes  = 6,
-      _ink_on    = 0x80,
-
-      NonZero    = NonZeroOff | _ink_on,
-      Zero       = ZeroOff    | _ink_on,
-      Xor        = XorOff     | _ink_on,
-      Xnor       = XnorOff    | _ink_on,
-      Latch      = LatchOff   | _ink_on,
-      Clock      = ClockOff   | _ink_on,
-};
 
 
 /// <summary>
@@ -68,7 +41,7 @@ enum class Logic : uint8_t {
 enum class Ink : uint8_t {
       None = 0,
 
-      TraceOff = 1,
+      TraceOff,
       ReadOff,
       WriteOff,
       Cross,
@@ -131,157 +104,36 @@ enum class Ink : uint8_t {
 };
 
 
-/*--------------------------------------------------------------------------------------*/
-
-
-/*
- * Hideous boilerplate garbage to make using `enum class` objects less infuriatingly
- * tedious and "cast-tastic". This nonsense takes up less space on the page with the
- * long lines than if properly formatted, which is a win in my book.
- *
- * Incidentally, resharper whines ever so much about things not being "const",
- * so I shut it up.
- */
-#define intc   int const
-#define uintc  uint const
-#define Logicc Logic const
-#define Inkc   Ink const
-
-template <typename T> concept Integral = std::is_integral<T>::value;
-
-ND OVCB_INLINE Logic operator>>(Logicc val, uintc n)      { return static_cast<Logic>(static_cast<uint>(val) >> n); }
-ND OVCB_INLINE Logic operator<<(Logicc val, uintc n)      { return static_cast<Logic>(static_cast<uint>(val) << n); }
-ND OVCB_INLINE Logic operator& (Logicc val1, uintc val2)  { return static_cast<Logic>(static_cast<uint>(val1) & val2); }
-ND OVCB_INLINE Logic operator| (Logicc val1, uintc val2)  { return static_cast<Logic>(static_cast<uint>(val1) | val2); }
-ND OVCB_INLINE Logic operator& (Logicc val1, Logicc val2) { return static_cast<Logic>(static_cast<uint>(val1) & static_cast<uint>(val2)); }
-ND OVCB_INLINE Logic operator| (Logicc val1, Logicc val2) { return static_cast<Logic>(static_cast<uint>(val1) | static_cast<uint>(val2)); }
-
-template <typename T> requires Integral<T>
-ND OVCB_INLINE bool
-operator==(Logic const op1, T const op2)
-{
-      return op1 == static_cast<Logic>(op2);
-}
-
-
-ND OVCB_INLINE Ink operator>>(Inkc val, uintc n)     { return static_cast<Ink>(static_cast<uint>(val) >> n); }
-ND OVCB_INLINE Ink operator<<(Inkc val, uintc n)     { return static_cast<Ink>(static_cast<uint>(val) << n); }
-ND OVCB_INLINE Ink operator& (Inkc val1, uintc val2) { return static_cast<Ink>(static_cast<uint>(val1) & val2); }
-ND OVCB_INLINE Ink operator| (Inkc val1, uintc val2) { return static_cast<Ink>(static_cast<uint>(val1) | val2); }
-ND OVCB_INLINE Ink operator& (Inkc val1, Inkc val2)  { return static_cast<Ink>(static_cast<uint>(val1) & static_cast<uint>(val2)); }
-ND OVCB_INLINE Ink operator| (Inkc val1, Inkc val2)  { return static_cast<Ink>(static_cast<uint>(val1) | static_cast<uint>(val2)); }
-ND OVCB_INLINE int operator+ (Inkc val1, intc val2)  { return static_cast<int>(val1) + val2; }
-
-template <typename T> requires Integral<T>
-ND OVCB_INLINE bool
-operator==(Ink const op1, T const op2)
-{
-      return op1 == static_cast<Ink>(op2);
-}
-
-#undef intc
-#undef uintc
-#undef Logicc
-#undef Inkc
-
-
-/*--------------------------------------------------------------------------------------*/
-/* Helper routines for Logic objects. */
-
 /**
- * \brief Sets the ink (logic) type to be as specified by state.
- * \param logic The Ink (logic) value to modify.
- * \param state Should be 0 to turn off, 1 to turn on.
- * \return The modified value.
+ * @brief 8 bit state. 7 bit type + 1 active bit.
+ * @note
+ * - Add new logic behavior here. All inks define their logic from this.
+ * - This is seperate from Ink to simplify switch logic
  */
-ND OVCB_INLINE Logic setOn(Logic const logic, uint const state)
-{
-      return (logic & 0x7F) | (state << 7);
-}
+enum class Logic : uint8_t {
+      None = 0,
 
-// Sets the ink type to be on
-ND OVCB_INLINE Logic setOn(Logic const logic)
-{
-      return logic | Logic::_ink_on;
-}
+      NonZeroOff,
+      ZeroOff,
+      XorOff,
+      XnorOff,
+      LatchOff,
+      ClockOff,
+      TimerOff,
+      RandomOff,
 
-// Sets the ink type to be off
-ND OVCB_INLINE Logic setOff(Logic const logic)
-{
-      return logic & 0x7F;
-}
+      _numTypes,
+      _ink_on = 0x80,
 
-// Gets the ink active state
-ND OVCB_INLINE bool getOn(Logic const logic)
-{
-      return static_cast<bool>(logic >> 7);
-}
-
-
-/*--------------------------------------------------------------------------------------*/
-/* Helper routines for Ink objects. */
-
-/**
- * \brief Sets the ink type to be as specified by state.
- * \param ink The Ink value to modify.
- * \param state Should be 0 to turn off, 1 to turn on.
- * \return The modified value.
- */
-ND OVCB_INLINE Ink setOn(Ink const ink, uint const state)
-{
-      return (ink & 0x7F) | (state << 7);
-}
-
-// Sets the ink type to be on.
-ND OVCB_INLINE Ink setOn(Ink const ink)
-{
-      return ink | Ink::_ink_on;
-}
-
-// Sets the ink type to be off
-ND OVCB_INLINE Ink setOff(Ink const ink)
-{
-      return ink & 0x7F;
-}
-
-// Gets the ink active state
-ND OVCB_INLINE bool getOn(Ink const ink)
-{
-      return static_cast<bool>(ink >> 7);
-}
-
-
-// Gets the logic type of said ink
-// Define the logics of each ink here.
-inline Logic inkLogicType(Ink ink)
-{
-      ink = setOff(ink);
-
-      switch (ink) {
-      case Ink::NotOff:
-      case Ink::NorOff:
-      case Ink::AndOff:
-            return Logic::ZeroOff;
-
-      case Ink::XorOff:
-            return Logic::XorOff;
-
-      case Ink::XnorOff:
-            return Logic::XnorOff;
-
-      case Ink::LatchOff:
-            return Logic::LatchOff;
-
-      case Ink::ClockOff:
-            return Logic::ClockOff;
-
-      default:
-            return Logic::NonZeroOff;
-      }
-}
-
-// Gets the string name of the ink
-extern char const *getInkString(Ink ink);
+      NonZero  = NonZeroOff  | _ink_on,
+      Zero     = ZeroOff     | _ink_on,
+      Xor      = XorOff      | _ink_on,
+      Xnor     = XnorOff     | _ink_on,
+      Latch    = LatchOff    | _ink_on,
+      Clock    = ClockOff    | _ink_on,
+      Timer    = TimerOff    | _ink_on,
+      Random   = RandomOff   | _ink_on,
+};
 
 
 /*--------------------------------------------------------------------------------------*/
@@ -330,97 +182,12 @@ struct LatchInterface {
       int        gids[64];
 };
 
-
-constexpr bool
-operator==(InkPixel const &first, InkPixel const &second) noexcept
-{
-      return first.ink == second.ink && first.meta == second.meta;
-}
-
-
-/* Paranoia. */
-static_assert(sizeof(InkState)  == 4 && offsetof(InkState, logic) == 3);
-static_assert(sizeof(InkPixel)  == 4 && offsetof(InkPixel, meta) == 2);
-static_assert(sizeof(SparseMat) == 24);
-static_assert(sizeof(InstrumentBuffer) == 16);
-static_assert(sizeof(SimulationResult) == 16);
-static_assert(sizeof(LatchInterface) == SIZE_C(284));
-
-
 /*--------------------------------------------------------------------------------------*/
+} // namespace openVCB
 
+#include "openVCB_Helpers.hh"
 
-struct string_array {
-      char   **list;
-      uint32_t max;
-      uint32_t qty = 0;
-
-      explicit string_array(uint32_t const max = 32)
-            : list(new char *[max]), max(max)
-      {
-            memset(list, 0, max * sizeof(char *));
-      }
-
-      ~string_array()
-      {
-            if (list) {
-                  for (unsigned i = 0; i < qty; ++i) {
-                        delete[] list[i];
-                        list[i] = nullptr;
-                  }
-                  delete[] list;
-                  max = qty = 0;
-                  list = nullptr;
-            }
-      }
-
-      string_array(string_array const &)                = delete;
-      string_array &operator=(string_array const &)     = delete;
-      string_array(string_array &&) noexcept            = delete;
-      string_array &operator=(string_array &&) noexcept = delete;
-
-
-      void destroy()
-      {
-            this->~string_array();
-      }
-
-      ND char *push_blank(size_t const len)
-      {
-            if (qty + 1 == max) {
-                  max += 8;
-                  auto **tmp = new char *[max];
-                  std::copy_n(list, qty, tmp);
-                  delete[] list;
-                  list = tmp;
-            }
-
-            auto *str = new char[len + 1];
-            list[qty++] = str;
-            return str;
-      }
-
-      void push(char const *orig, size_t const len)
-      {
-            char *str = push_blank(len);
-            memcpy(str, orig, len + 1);
-      }
-
-      ND char **  data() const { return list; }
-      ND uint32_t size() const { return qty; }
-
-      void push(char const *orig)             { push(orig,        strlen(orig)); }
-      void push(std::string const &orig)      { push(orig.data(), orig.size());  }
-      void push(std::string_view const &orig) { push(orig.data(), orig.size());  }
-
-      template <size_t N>
-      void push(char const (&str)[N])
-      {
-            push(str, N);
-      }
-};
-
-
+namespace openVCB {
 /*--------------------------------------------------------------------------------------*/
 
 
@@ -457,9 +224,12 @@ class Project
             0xFF0000, 0x00FF00
       };
 
-      std::vector<int32_t> clockGIDs;
-      uint32_t             clockCounter = 0;
-      uint32_t             clockPeriod  = 2;
+      //std::vector<int32_t> clockGIDs;
+      //uint32_t             clockCounter = 0;
+      //uint32_t             clockPeriod  = 2;
+
+      ClockCounter tickClock;
+      ClockCounter realtimeClock;
 
       // Adjacentcy matrix.
       // By default, the indices from ink groups first and then component groups.
@@ -485,11 +255,13 @@ class Project
       uint32_t qSize            = 0;
       bool     states_is_native = false;
 
-      string_array *error_messages = nullptr;
+      StringArray      *error_messages  = nullptr;
+      RandomBitProvider random;
 
       //---------------------------------------------------------------------------------
 
       Project() = default;
+      explicit Project(uint64_t seed);
       ~Project();
 
       // Clang complains unless *all* possible constructors are defined.
@@ -548,42 +320,11 @@ class Project
     private:
       /// Emits an event if it is not yet in the queue.
       [[__gnu__::__hot__]]
-      OVCB_INLINE bool tryEmit(int32_t gid);
+      OVCB_CONSTEXPR bool tryEmit(int32_t gid);
 
-      OVCB_INLINE void handleVMemTick();
+      OVCB_CONSTEXPR void handleVMemTick();
 
-      //---------------------------------------------------------------------------------
-
-      class ClockCounter
-      {
-          public:
-            ClockCounter(uint16_t const low, uint16_t const high)
-                  : low_period_(low),
-                    high_period_(high)
-            {}
-
-            ND int  counter() const { return counter_; }
-            ND bool is_zero() const { return counter_ == 0; }
-            ND int  limit() const { return state_ ? low_period_ : high_period_; }
-
-            bool increment()
-            {
-                  if (counter_ + 1 == limit()) {
-                        counter_ = 0;
-                        state_   = !state_;
-                        return true;
-                  }
-
-                  ++counter_;
-                  return false;
-            }
-
-          private:
-            uint16_t counter_ = 0;
-            uint16_t low_period_;
-            uint16_t high_period_;
-            bool     state_ = false;
-      };
+      OVCB_INLINE bool GetRandomBit() { return static_cast<bool>(random()); }
 };
 
 

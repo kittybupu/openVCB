@@ -59,11 +59,13 @@ Project::tick(int32_t const numTicks, int64_t const maxEvents)
             if (vmem)
                   handleVMemTick();
 
-            // Update the clock ink
-            clockCounter + 1 >= clockPeriod ? clockCounter = 0
-                                            : ++clockCounter;
-            if (clockCounter < 2)
-                  for (auto const gid : clockGIDs)
+            if (tickClock.tick())
+                  for (auto const gid : tickClock.GIDs)
+                        if (!states[gid].visited)
+                              updateQ[0][qSize++] = gid;
+
+            if (realtimeClock.tick())
+                  for (auto const gid : realtimeClock.GIDs)
                         if (!states[gid].visited)
                               updateQ[0][qSize++] = gid;
 
@@ -84,26 +86,37 @@ Project::tick(int32_t const numTicks, int64_t const maxEvents)
 
                         // Copy over last active inputs
                         lastActiveInputs[i] = states[gid].activeInputs;
-                        if (bool(ink & Logic::LatchOff))
+                        if (SetOff(ink) == Logic::LatchOff)
                               states[gid].activeInputs = 0;
                   }
 
                   // Main update loop
                   for (uint i = 0; i < numEvents; ++i) {
                         int   const gid        = updateQ[0][i];
-                        Logic const curInk     = states[gid].logic;
-                        bool  const lastActive = getOn(curInk);
+                        auto  const curInk     = states[gid];
+                        bool  const lastActive = IsOn(curInk.logic);
                         int   const lastInputs = lastActiveInputs[i];
                         bool        nextActive;
 
-                        switch (setOff(curInk)) {  // NOLINT(clang-diagnostic-switch-enum)
-                        case Logic::NonZeroOff: nextActive = lastInputs != 0;                  break;
-                        case Logic::ZeroOff:    nextActive = lastInputs == 0;                  break;
-                        case Logic::XorOff:     nextActive = lastInputs % 2;                   break;
-                        case Logic::XnorOff:    nextActive = !(lastInputs % 2);                break;
-                        case Logic::LatchOff:   nextActive = int(lastActive) ^ lastInputs % 2; break;
-                        case Logic::ClockOff:   nextActive = clockCounter == 0;                break;
-                        default:                nextActive = false;
+                        // NOLINTNEXTLINE(clang-diagnostic-switch-enum)
+                        switch (SetOff(curInk.logic)) {
+                        case Logic::NonZeroOff: nextActive = lastInputs != 0;   break;
+                        case Logic::ZeroOff:    nextActive = lastInputs == 0;   break;
+                        case Logic::XorOff:     nextActive = lastInputs & 1;    break;
+                        case Logic::XnorOff:    nextActive = !(lastInputs & 1); break;
+                        default:                nextActive = false;             break;
+                        case Logic::LatchOff:
+                              nextActive = lastActive ^ (lastInputs & 1);
+                              break;
+                        case Logic::ClockOff:
+                              nextActive = tickClock.is_zero() ? !lastActive : lastActive;
+                              break;
+                        case Logic::TimerOff:
+                              nextActive = realtimeClock.is_zero() ? !lastActive : lastActive;
+                              break;
+                        case Logic::RandomOff:
+                              nextActive = lastInputs > 0 && (lastActive || GetRandomBit());
+                              break;
                         }
 
                         // Short circuit if the state didnt change
@@ -111,7 +124,7 @@ Project::tick(int32_t const numTicks, int64_t const maxEvents)
                               continue;
 
                         // Update the state
-                        states[gid].logic = setOn(curInk, nextActive);
+                        states[gid].logic = SetOn(curInk.logic, nextActive);
 
                         // Loop over neighbors
                         int     const delta = nextActive ? 1 : -1;
@@ -119,7 +132,7 @@ Project::tick(int32_t const numTicks, int64_t const maxEvents)
 
                         for (int n = writeMap.ptr[gid]; n < end; ++n) {
                               auto  const nxtId  = writeMap.rows[n];
-                              Logic const nxtInk = setOff(states[nxtId].logic);
+                              Logic const nxtInk = SetOff(states[nxtId].logic);
 
                               // Ignore falling edge for latches
                               if (!nextActive && nxtInk == Logic::LatchOff)
@@ -128,11 +141,10 @@ Project::tick(int32_t const numTicks, int64_t const maxEvents)
                               // Update actives
                               int const lastNxtInput     = states[nxtId].activeInputs;
                               states[nxtId].activeInputs = int16_t(lastNxtInput + delta);
-                              static constexpr Logic XOR_XNOR = Logic::XorOff | Logic::XnorOff;
 
                               // Inks have convenient "critical points"
                               // We can skip any updates that do not hover around 0 with a few exceptions.
-                              if (lastNxtInput == 0 || lastNxtInput + delta == 0 || bool(nxtInk & XOR_XNOR))
+                              if (lastNxtInput == 0 || lastNxtInput + delta == 0 || nxtInk == Logic::XorOff || nxtInk == Logic::XnorOff)
                                     tryEmit(nxtId);
                         }
                   }
@@ -146,7 +158,7 @@ Project::tick(int32_t const numTicks, int64_t const maxEvents)
 }
 
 
-OVCB_INLINE bool
+OVCB_CONSTEXPR bool
 Project::tryEmit(int32_t const gid)
 {
       // Check if this event is already in queue.
@@ -158,13 +170,13 @@ Project::tryEmit(int32_t const gid)
 }
 
 
-OVCB_INLINE void
+OVCB_CONSTEXPR void
 Project::handleVMemTick()
 {
       // Get current address
       uint32_t addr = 0;
       for (int k = 0; k < vmAddr.numBits; ++k)
-            addr |= static_cast<uint>(getOn(states[vmAddr.gids[k]].logic)) << k;
+            addr |= static_cast<uint>(IsOn(states[vmAddr.gids[k]].logic)) << k;
 
       if (addr != lastVMemAddr) {
             // Load address
@@ -190,7 +202,7 @@ Project::handleVMemTick()
             // Turn on those latches
             for (int k = 0; k < vmData.numBits; ++k) {
                   auto      &state = states[vmData.gids[k]];
-                  bool const isOn  = getOn(state.logic);
+                  bool const isOn  = IsOn(state.logic);
 
                   if (((data >> k) & 1) != isOn) {
                         state.activeInputs = 1;
@@ -208,7 +220,7 @@ Project::handleVMemTick()
             // Write address
             uint32_t data = 0;
             for (int k = 0; k < vmData.numBits; ++k)
-                  data |= static_cast<uint>(getOn(states[vmData.gids[k]].logic)) << k;
+                  data |= static_cast<uint>(IsOn(states[vmData.gids[k]].logic)) << k;
 
 #ifdef OVCB_BYTE_ORIENTED_VMEM
 # ifdef USE_GNU_INLINE_ASM

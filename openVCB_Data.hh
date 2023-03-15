@@ -2,11 +2,11 @@
 #ifndef Sh0BhWjNiz6BDPKRGtzGLQfTq3U0OXv1
 #define Sh0BhWjNiz6BDPKRGtzGLQfTq3U0OXv1
 
-#include <cinttypes>
-#include <cstdint>
-#include <string_view>
+#include "openVCB_Utils.hh"
 
 namespace openVCB {
+/****************************************************************************************/
+
 
 constexpr uint32_t colorPallet[54] = {
       // Off
@@ -132,7 +132,7 @@ constexpr std::string_view inkNames[54] = {
       "AND (On)",
 
       "XOR (On)",
-      "NXOR (On)",
+      "XNOR (On)",
 
       "Clock (On)",
       "Latch (On)",
@@ -177,5 +177,6 @@ constexpr glm::ivec2 fourNeighbors[4] = {
 };
 
 
+/****************************************************************************************/
 } // namespace openVCB
 #endif

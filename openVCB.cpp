@@ -2,10 +2,21 @@
 
 #include "openVCB.h"
 
-extern "C" void openVCB_free_error_strings() noexcept;
+extern "C" void openVCB_FreeErrorArray() noexcept;
 
 
 namespace openVCB {
+/****************************************************************************************/
+
+
+/* Paranoia. */
+static_assert(sizeof(InkState) == 4 && offsetof(InkState, logic) == 3);
+static_assert(sizeof(InkPixel) == 4 && offsetof(InkPixel, meta) == 2);
+static_assert(sizeof(SparseMat) == 24);
+static_assert(sizeof(InstrumentBuffer) == 16);
+static_assert(sizeof(SimulationResult) == 16);
+static_assert(sizeof(LatchInterface) == 284);
+static_assert(sizeof(VMemWrapper) == sizeof(void *));
 
 
 void
@@ -20,13 +31,19 @@ Project::toggleLatch(glm::ivec2 const pos)
 void
 Project::toggleLatch(int const gid)
 {
-      if (setOff(stateInks[gid]) != Ink::LatchOff)
+      if (SetOff(stateInks[gid]) != Ink::LatchOff)
             return;
       states[gid].activeInputs = 1;
       if (states[gid].visited)
             return;
       states[gid].visited = true;
       updateQ[0][qSize++] = gid;
+}
+
+Project::Project(uint64_t const seed)
+{
+      if (seed <= UINT32_MAX)
+            random = RandomBitProvider{static_cast<uint32_t>(seed & 0xFFFF'FFFF)};
 }
 
 Project::~Project()
@@ -45,7 +62,7 @@ Project::~Project()
       delete[] updateQ[1];
       delete[] lastActiveInputs;
 
-      openVCB_free_error_strings();
+      ::openVCB_FreeErrorArray();
 }
 
 std::pair<Ink, int>
@@ -80,4 +97,5 @@ Project::removeBreakpoint(int const gid)
 }
 
 
+/****************************************************************************************/
 } // namespace openVCB

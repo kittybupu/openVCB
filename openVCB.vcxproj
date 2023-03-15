@@ -522,10 +522,10 @@
     <ClInclude Include="gorder\UnitHeap.h" />
     <ClInclude Include="gorder\Util.h" />
     <ClInclude Include="openVCB.h" />
-    <ClInclude Include="openVCBExpr.hh" />
+    <ClInclude Include="openVCB_Expr.hh" />
     <ClInclude Include="openVCB_Data.hh" />
-    <ClInclude Include="openVCB_VMem.hh" />
-    <ClInclude Include="Utils.hh" />
+    <ClInclude Include="openVCB_Helpers.hh" />
+    <ClInclude Include="openVCB_Utils.hh" />
   </ItemGroup>
   <ItemGroup>
     <MASM Include="bitroutines_unix.asm">

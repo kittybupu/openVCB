@@ -3,9 +3,9 @@
 #include <tbb/spin_mutex.h>
 
 #ifdef _WIN32
-# define EXPORT_API __declspec(dllexport)
+# define EXPORT_API extern "C" __declspec(dllexport)
 #else
-# define EXPORT_API
+# define EXPORT_API extern "C"
 #endif
 
 namespace util = openVCB::util;
@@ -83,8 +83,6 @@ simFunc()
 } // namespace
 /****************************************************************************************/
 
-
-extern "C" {
 
 /*
  * Functions to control openVCB simulations
@@ -200,9 +198,9 @@ pollBreakpoint()
 }
 
 EXPORT_API void
-setClockPeriod(uint64_t const period)
+setClockPeriod(uint32_t const period)
 {
-      proj->clockPeriod = static_cast<uint32_t>(period);
+      proj->tickClock.set_period(period);
 }
 
 
@@ -277,10 +275,14 @@ addInstrumentBuffer(openVCB::InkState *buf, int const bufSize, int const idx)
 EXPORT_API void
 setStateMemory(int *data, int const size)
 {
-      memcpy(data, proj->states, sizeof(*proj->states) * size);
-      delete[] proj->states;
-      proj->states_is_native = false;
-      proj->states           = reinterpret_cast<openVCB::InkState *>(data);
+      if (proj->states_is_native) {
+            memcpy(data, proj->states, sizeof(*proj->states) * size);
+            delete[] proj->states;
+            proj->states_is_native = false;
+            proj->states           = reinterpret_cast<openVCB::InkState *>(data);
+      } else {
+            throw std::runtime_error("Cannot replace states matrix twice!");
+      }
 }
 
 EXPORT_API void
@@ -321,7 +323,7 @@ setDecoMemory(_Inout_ int *__restrict const       indices,
                   if (uint32_t(col[idx]) != UINT32_MAX)
                         continue;
 
-                  auto const ink = setOff(proj->image[idx].ink);
+                  auto const ink = SetOff(proj->image[idx].ink);
                   if (util::eq_any(ink, Ink::LatchOff, Ink::LedOff)) {
                         queue.push({x, y, proj->indexImage[idx]});
                         visited[idx] = true;
@@ -372,31 +374,28 @@ setInterface(openVCB::LatchInterface const addr, openVCB::LatchInterface const d
       proj->vmData = data;
 }
 
-
 /*--------------------------------------------------------------------------------------*/
 
+static openVCB::StringArray *global_errors_reference = nullptr;
+static bool                  inhibitStupidity        = false;
 
-static openVCB::string_array *global_errors_reference = nullptr;
-static bool                   inhibitStupidity        = false;
-
-
-EXPORT_API char **
-openVCB_compile_and_run_project(size_t *numErrors, int *stateSize)
+EXPORT_API char const *const *
+openVCB_CompileAndRun(size_t *numErrors, int *stateSize)
 {
       proj->preprocess();
+      *numErrors = proj->error_messages->size();
 
-      *numErrors = proj->error_messages->qty;
-      if (proj->error_messages->qty > 0) {
-            *stateSize              = -1;
+      if (!proj->error_messages->empty()) {
             global_errors_reference = proj->error_messages;
             proj->error_messages    = nullptr;
+            *stateSize              = -1;
 
             inhibitStupidity = true;
             delete proj;
             proj = nullptr;
             inhibitStupidity = false;
 
-            return global_errors_reference->list;
+            return global_errors_reference->data();
       }
 
       delete proj->error_messages;
@@ -410,7 +409,7 @@ openVCB_compile_and_run_project(size_t *numErrors, int *stateSize)
 }
 
 EXPORT_API void 
-openVCB_free_error_strings() noexcept
+openVCB_FreeErrorArray() noexcept
 {
       if (!inhibitStupidity) {
             delete global_errors_reference;
@@ -420,4 +419,3 @@ openVCB_free_error_strings() noexcept
 
 
 /*--------------------------------------------------------------------------------------*/
-} // extern "C"

@@ -4,7 +4,7 @@
 
 // ReSharper disable CppClangTidyCertErr33C
 #include "openVCB.h"
-#include "openVCBExpr.hh"
+#include "openVCB_Expr.hh"
 
 
 namespace openVCB

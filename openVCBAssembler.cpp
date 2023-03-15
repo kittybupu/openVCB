@@ -2,7 +2,7 @@
 // ReSharper disable StringLiteralTypo
 // ReSharper disable CppClangTidyCertErr33C
 #include "openVCB.h"
-#include "openVCBExpr.hh"
+#include "openVCB_Expr.hh"
 
 #include <array>
 
@@ -203,7 +203,7 @@ Project::assembleVmem(char *errp, size_t errSize)
                   data.gids[i]   = indexImage[pos.x + pos.y * width];
 
                   if (data.gids[i] == -1 ||
-                      setOff(states[data.gids[i]].logic) != Logic::LatchOff) {
+                      SetOff(states[data.gids[i]].logic) != Logic::LatchOff) {
                         ::printf("error: No %s latch at VMem position %d %d\n",
                                  msg, pos.x, pos.y);
                         ::exit(1);

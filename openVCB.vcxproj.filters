@@ -80,13 +80,13 @@
     <ClInclude Include="openVCB.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="openVCBExpr.hh">
+    <ClInclude Include="openVCB_Expr.hh">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="openVCB_VMem.hh">
+    <ClInclude Include="openVCB_Helpers.hh">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Utils.hh">
+    <ClInclude Include="openVCB_Utils.hh">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
