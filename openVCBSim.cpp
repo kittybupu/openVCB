@@ -43,12 +43,13 @@ Project::tick(int32_t const numTicks, int64_t const maxEvents)
 
             for (auto &[index, bp_logic] : breakpoints) {
                   auto const &[_0, _1, logic] = states[index];
-                  if (logic != bp_logic) {
-                        bp_logic       = logic;
-                        res.breakpoint = true;
+                  if (logic != bp_logic ) {
+                        bp_logic = logic;
+                        if (IsOn(logic))
+                              res.breakpoint = true;
                   }
             }
-            if (res.breakpoint)
+            if (res.breakpoint) [[unlikely]]
                   return res;
 
             for (auto const &[buffer, bufferSize, idx] : instrumentBuffers)
@@ -56,18 +57,27 @@ Project::tick(int32_t const numTicks, int64_t const maxEvents)
             ++tickNum;
 
             // VMem implementation.
-            if (vmem)
-                  handleVMemTick();
+            if (vmem) {
+#ifdef OVCB_BYTE_ORIENTED_VMEM
+                  if (vmem_is_bytes)
+                        handleByteVMemTick;
+                  else
+                        handleWordVMemTick();
+#else
+                  handleWordVMemTick();
+#endif
+            }
 
             if (tickClock.tick())
                   for (auto const gid : tickClock.GIDs)
                         if (!states[gid].visited)
                               updateQ[0][qSize++] = gid;
 
-            if (realtimeClock.tick())
-                  for (auto const gid : realtimeClock.GIDs)
-                        if (!states[gid].visited)
-                              updateQ[0][qSize++] = gid;
+            if (!realtimeClock.GIDs.empty()) [[unlikely]]
+                  if (realtimeClock.tick()) [[unlikely]]
+                        for (auto const gid : realtimeClock.GIDs)
+                              if (!states[gid].visited)
+                                    updateQ[0][qSize++] = gid;
 
             for (int traceUpdate = 0; traceUpdate < 2; ++traceUpdate) {
                   // We update twice per tick
@@ -158,6 +168,7 @@ Project::tick(int32_t const numTicks, int64_t const maxEvents)
 }
 
 
+[[__gnu__::__hot__]]
 OVCB_CONSTEXPR bool
 Project::tryEmit(int32_t const gid)
 {
@@ -170,8 +181,9 @@ Project::tryEmit(int32_t const gid)
 }
 
 
+[[__gnu__::__hot__]]
 OVCB_CONSTEXPR void
-Project::handleVMemTick()
+Project::handleWordVMemTick()
 {
       // Get current address
       uint32_t addr = 0;
@@ -183,21 +195,7 @@ Project::handleVMemTick()
             uint32_t data = 0;
             lastVMemAddr  = addr;
 
-#ifdef OVCB_BYTE_ORIENTED_VMEM
-# ifdef USE_GNU_INLINE_ASM
-            // We can use Intel syntax. Hooray.
-            ASM_VOLATILE (
-                  "mov	%[data], [%[vmem] + %q[addr]]"
-                  : [data] "=r" (data)
-                  : [vmem] "r" (vmem.b), [addr] "r" (addr)
-                  :
-            );
-# else
-            data = ::openVCB_evil_assembly_bit_manipulation_routine_getVMem(vmem.b, addr);
-# endif
-#else
             data = vmem.i[addr];
-#endif
 
             // Turn on those latches
             for (int k = 0; k < vmData.numBits; ++k) {
@@ -222,7 +220,60 @@ Project::handleVMemTick()
             for (int k = 0; k < vmData.numBits; ++k)
                   data |= static_cast<uint>(IsOn(states[vmData.gids[k]].logic)) << k;
 
+            vmem.i[addr] = data;
+      }
+}
+
+
 #ifdef OVCB_BYTE_ORIENTED_VMEM
+OVCB_CONSTEXPR void
+Project::handleByteVMemTick()
+{
+      // Get current address
+      uint32_t addr = 0;
+      for (int k = 0; k < vmAddr.numBits; ++k)
+            addr |= static_cast<uint>(IsOn(states[vmAddr.gids[k]].logic)) << k;
+
+      if (addr != lastVMemAddr) {
+            // Load address
+            uint32_t data = 0;
+            lastVMemAddr  = addr;
+
+# ifdef USE_GNU_INLINE_ASM
+            // We can use Intel syntax. Hooray.
+            ASM_VOLATILE (
+                  "mov	%[data], [%[vmem] + %q[addr]]"
+                  : [data] "=r" (data)
+                  : [vmem] "r" (vmem.b), [addr] "r" (addr)
+                  :
+            );
+# else
+            data = ::openVCB_evil_assembly_bit_manipulation_routine_getVMem(vmem.b, addr);
+# endif
+
+            // Turn on those latches
+            for (int k = 0; k < vmData.numBits; ++k) {
+                  auto      &state = states[vmData.gids[k]];
+                  bool const isOn  = IsOn(state.logic);
+
+                  if (((data >> k) & 1) != isOn) {
+                        state.activeInputs = 1;
+                        if (state.visited)
+                              continue;
+                        state.visited       = true;
+                        updateQ[0][qSize++] = vmData.gids[k];
+                  }
+            }
+
+            // Forcibly ignore further address updates
+            for (int k = 0; k < vmAddr.numBits; ++k)
+                  states[vmAddr.gids[k]].activeInputs = 0;
+      } else {
+            // Write address
+            uint32_t data = 0;
+            for (int k = 0; k < vmData.numBits; ++k)
+                  data |= static_cast<uint>(IsOn(states[vmData.gids[k]].logic)) << k;
+
 # ifdef USE_GNU_INLINE_ASM
             ASM_VOLATILE (
                   "shrx	eax, [%[vmem] + %q[addr]], %[numBits]" "\n\t"
@@ -237,11 +288,9 @@ Project::handleVMemTick()
 # else
             openVCB_evil_assembly_bit_manipulation_routine_setVMem(vmem.b, addr, data, vmData.numBits);
 # endif
-#else
-            vmem.i[addr] = data;
-#endif
       }
 }
+#endif
 
 
 } // namespace openVCB

@@ -379,7 +379,7 @@
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions512</EnableEnhancedInstructionSet>
-      <AdditionalOptions>/Zc:preprocessor /Zc:__cplusplus -Qunused-arguments -Qiopenmp /clang:-mtune=native /clang:-march=native /clang:-Ofast /clang:-fvectorize /clang:-fslp-vectorize /clang:-mprefer-vector-width=512 /clang:-Wall /clang:-Wextra  /clang:-Wshorten-64-to-32 /clang:-Wsign-compare /clang:-Wsign-conversion /clang:-Werror=format /clang:-Wno-macro-redefined /clang:-Wno-char-subscripts /clang:-Werror=sign-compare /clang:-masm=intel %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Zc:preprocessor /Zc:__cplusplus -Qunused-arguments -Qiopenmp /clang:-mtune=native /clang:-march=native /clang:-Ofast /clang:-fvectorize /clang:-fslp-vectorize /clang:-mprefer-vector-width=256 /clang:-Wall /clang:-Wextra  /clang:-Wshorten-64-to-32 /clang:-Wsign-compare /clang:-Wsign-conversion /clang:-Werror=format /clang:-Wno-macro-redefined /clang:-Wno-char-subscripts /clang:-Werror=sign-compare /clang:-masm=intel %(AdditionalOptions)</AdditionalOptions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <ControlFlowGuard>false</ControlFlowGuard>
       <AssemblerOutput>All</AssemblerOutput>
@@ -410,6 +410,7 @@
       <SYCLShowVerboseInformation>false</SYCLShowVerboseInformation>
       <StringPooling>
       </StringPooling>
+      <Optimization>MaxSpeed</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

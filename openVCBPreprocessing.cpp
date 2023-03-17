@@ -46,8 +46,8 @@ class Preprocessor
       ND int32_t calc_index(glm::ivec2 vec) const;
       ND int32_t calc_index(int x, int y) const;
 
-      void add_notfound_errmsg(glm::ivec2 neighbor, glm::ivec2 tunComp) const;
-      void add_invalid_tunnel_entrance_errmsg(glm::ivec2 origComp, glm::ivec2 tmpComp) const;
+      void push_tunnel_exit_not_found_error(glm::ivec2 neighbor, glm::ivec2 tunComp) const;
+      void push_invalid_tunnel_entrance_error(glm::ivec2 origComp, glm::ivec2 tmpComp) const;
 
       /*--------------------------------------------------------------------------------*/
 
@@ -282,7 +282,7 @@ Preprocessor::search(int const x, int const y)
 
       case Ink::BreakpointOff:
             gid = p.writeMap.n++;
-            p.addBreakpoint(gid);
+            p.breakpoints[gid] = inkLogicType(ink);
             break;
 
       default:
@@ -551,7 +551,7 @@ Preprocessor::handle_tunnel(uint const    nindex,
       {
             if (!validate_vector(tunComp)) {
                   // BUG ERROR ERROR ERROR ERROR
-                  add_notfound_errmsg(neighbor, newComp);
+                  push_tunnel_exit_not_found_error(neighbor, newComp);
                   return false;
             }
             auto tunIdx = calc_index(tunComp);
@@ -563,7 +563,7 @@ Preprocessor::handle_tunnel(uint const    nindex,
             tunComp += neighbor;
             if (!validate_vector(tunComp)) {
                   // BUG ERROR ERROR ERROR ERROR
-                  add_notfound_errmsg(neighbor, newComp);
+                  push_tunnel_exit_not_found_error(neighbor, newComp);
                   return false;
             }
 
@@ -589,11 +589,11 @@ Preprocessor::handle_tunnel(uint const    nindex,
 
             auto tmpComp = tunComp - neighbor;
             tmpComp -= neighbor;
-            tunIdx = calc_index(tunComp);
+            tunIdx = calc_index(tmpComp);
             tunPix = p.image[tunIdx];
             if (tunPix == p.image[idx]) {
                   // BUG ERROR ERROR ERROR ERROR
-                  add_invalid_tunnel_entrance_errmsg(origComp, tmpComp);
+                  push_invalid_tunnel_entrance_error(origComp, tmpComp);
                   return false;
             }
       }
@@ -618,8 +618,8 @@ int32_t Preprocessor::calc_index(int const x, int const y) const
 
 
 void
-Preprocessor::add_notfound_errmsg(glm::ivec2 const neighbor,
-                                  glm::ivec2 const tunComp) const
+Preprocessor::push_tunnel_exit_not_found_error(glm::ivec2 const neighbor,
+                                               glm::ivec2 const tunComp) const
 {
       char const *dir = neighbor.x == 1    ? "east"
                         : neighbor.x == -1 ? "west"
@@ -628,14 +628,14 @@ Preprocessor::add_notfound_errmsg(glm::ivec2 const neighbor,
       char      *buf  = p.error_messages->push_blank(256);
       auto const size = snprintf(
           buf, 256,
-          R"(Error @ (%d, %d): No exit tunnel found in a search to the %s -- (%d, %d).)",
-          tunComp.x, tunComp.y, dir, neighbor.x, neighbor.y);
-      util::logs(buf, size);
+          R"(Error @ (%d, %d): No exit tunnel found in a search to the %s.)",
+          tunComp.x, tunComp.y, dir);
+      util::logs(buf, static_cast<size_t>(size));
 }
 
 
 void
-Preprocessor::add_invalid_tunnel_entrance_errmsg(glm::ivec2 const origComp,
+Preprocessor::push_invalid_tunnel_entrance_error(glm::ivec2 const origComp,
                                                  glm::ivec2 const tmpComp) const
 {
       char      *buf = p.error_messages->push_blank(256);

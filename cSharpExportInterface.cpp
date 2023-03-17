@@ -1,6 +1,7 @@
 // ReSharper disable CppTooWideScopeInitStatement
 #include "openVCB.h"
 #include <tbb/spin_mutex.h>
+#include <tbb/task.h>
 
 #ifdef _WIN32
 # define EXPORT_API extern "C" __declspec(dllexport)
@@ -10,10 +11,11 @@
 
 namespace util = openVCB::util;
 
-namespace {
-/****************************************************************************************/
 
-using openVCB::Ink, openVCB::Logic;
+/****************************************************************************************/
+namespace {
+
+using openVCB::Ink;
 
 constexpr double TARGET_DT = 1.0 / 60.0;
 constexpr double MIN_DT    = 1.0 / 30.0;
@@ -43,8 +45,7 @@ simFunc()
             auto curTime = clock::now();
             auto diff    = duration_cast<duration<double>>(curTime - lastTime).count();
             lastTime     = curTime;
-            desiredTicks = std::min(desiredTicks + diff * double(targetTPS),
-                                    tpsEst * MIN_DT);
+            desiredTicks = std::min(desiredTicks + diff * double(targetTPS), tpsEst * MIN_DT);
 
             // Find max tick amount we can do
             if (desiredTicks >= 1.0) {
@@ -53,9 +54,9 @@ simFunc()
 
                   // Aquire lock, simulate, and time
                   simLock.lock();
-                  auto t1  = clock::now();
-                  auto res = proj->tick(tickAmount, INT64_C(100'000'000));
-                  auto t2  = clock::now();
+                  auto       t1  = clock::now();
+                  auto const res = proj->tick(tickAmount);
+                  auto       t2  = clock::now();
                   simLock.unlock();
 
                   // Use timings to estimate max possible tps
@@ -78,7 +79,6 @@ simFunc()
                   std::this_thread::sleep_for(milliseconds{uint64_t(ms)});
       }
 }
-
 
 } // namespace
 /****************************************************************************************/
@@ -122,6 +122,7 @@ EXPORT_API uintptr_t
 getVMemAddress()
 {
 #ifdef OVCB_BYTE_ORIENTED_VMEM 
+      if (proj->)
       return proj->lastVMemAddr / 4;
 #else
       return proj->lastVMemAddr;
@@ -198,9 +199,15 @@ pollBreakpoint()
 }
 
 EXPORT_API void
-setClockPeriod(uint32_t const period)
+openVCB_SetClockPeriod(uint const high, uint const low)
 {
-      proj->tickClock.set_period(period);
+      proj->tickClock.set_period(high, low);
+}
+
+EXPORT_API void
+openVCB_SetTimerPeriod(uint32_t const period)
+{
+      proj->realtimeClock.set_period(period);
 }
 
 
@@ -210,9 +217,9 @@ setClockPeriod(uint32_t const period)
  */
 
 EXPORT_API void
-newProject()
+newProject(int64_t const seed, bool const vmemIsBytes)
 {
-      proj = new openVCB::Project;
+      proj = new openVCB::Project(seed, vmemIsBytes);
 }
 
 EXPORT_API int
@@ -231,7 +238,6 @@ EXPORT_API void
 initVMem(char const *assembly, int const aSize, char *err, int const errSize)
 {
       proj->assembly = std::string(assembly, aSize);
-      //proj->my_assembleVmem(err, errSize);
       proj->assembleVmem(err, errSize);
 }
 
@@ -307,10 +313,10 @@ setImageMemory(int *data, int const width, int const height)
 }
 
 EXPORT_API void
-setDecoMemory(_Inout_ int *__restrict const       indices,
-              _In_ UU int const                   indLen,
-              _In_    int const *__restrict const col,
-              _In_ UU int const                   colLen)
+setDecoMemory(int *__restrict const       indices,
+              int const                   indLen,
+              int const *__restrict const col,
+              int const                   colLen)
 {
       std::queue<glm::ivec3> queue;
       std::vector            visited(size_t(proj->width * proj->height), false);
@@ -368,16 +374,19 @@ getGroupStats(int *numGroups, int *numConnections)
 }
 
 EXPORT_API void
-setInterface(openVCB::LatchInterface const addr, openVCB::LatchInterface const data)
+setInterface(openVCB::LatchInterface const *const __restrict addr,
+             openVCB::LatchInterface const *const __restrict data)
 {
-      proj->vmAddr = addr;
-      proj->vmData = data;
+      proj->vmAddr = *addr;
+      proj->vmData = *data;
 }
 
 /*--------------------------------------------------------------------------------------*/
 
-static openVCB::StringArray *global_errors_reference = nullptr;
-static bool                  inhibitStupidity        = false;
+namespace {
+openVCB::StringArray *global_errors_reference = nullptr;
+bool                  inhibitStupidity        = false;
+}
 
 EXPORT_API char const *const *
 openVCB_CompileAndRun(size_t *numErrors, int *stateSize)
@@ -416,6 +425,3 @@ openVCB_FreeErrorArray() noexcept
             global_errors_reference = nullptr;
       }
 }
-
-
-/*--------------------------------------------------------------------------------------*/

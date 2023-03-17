@@ -26,10 +26,10 @@ ALIGN 16, int3
 ;; edx -> uint32_t data
 ;; ecx -> int      numBits (one byte)
 openVCB_evil_assembly_bit_manipulation_routine_setVMem:
-	shrx	eax, [rcx + rdx], ecx
+	shrx	eax, [rdi + rsi], ecx
 	shlx	rax, rax, rcx
 	or	eax, edx
-	mov	[rcx + rdx], eax
+	mov	[rdi + rsi], eax
 	ret
 	int3
 

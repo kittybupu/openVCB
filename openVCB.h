@@ -6,7 +6,7 @@
 #define C8kWpReCttGxHsWkLLl1RDjAweb3HDua
 
 // Toggle experimental byte addressed VMem.
-/* #undef OVCB_BYTE_ORIENTED_VMEM */
+/*#define OVCB_BYTE_ORIENTED_VMEM*/
 
 #include "openVCB_Utils.hh"
 #include "openVCB_Data.hh"
@@ -229,7 +229,7 @@ class Project
       //uint32_t             clockPeriod  = 2;
 
       ClockCounter tickClock;
-      ClockCounter realtimeClock;
+      TimerCounter realtimeClock;
 
       // Adjacentcy matrix.
       // By default, the indices from ink groups first and then component groups.
@@ -250,18 +250,18 @@ class Project
       uint64_t tickNum = 0;
 
       // Event queue
-      int32_t *updateQ[2]       = {nullptr, nullptr};
-      int16_t *lastActiveInputs = nullptr;
-      uint32_t qSize            = 0;
-      bool     states_is_native = false;
+      int32_t   *updateQ[2]       = {nullptr, nullptr};
+      int16_t   *lastActiveInputs = nullptr;
+      uint32_t   qSize            = 0;
+      bool       states_is_native = false;
+      bool const vmemIsBytes;
 
       StringArray      *error_messages  = nullptr;
       RandomBitProvider random;
 
       //---------------------------------------------------------------------------------
 
-      Project() = default;
-      explicit Project(uint64_t seed);
+      explicit Project(int64_t seed, bool vmemIsBytes);
       ~Project();
 
       // Clang complains unless *all* possible constructors are defined.
@@ -318,11 +318,14 @@ class Project
       //---------------------------------------------------------------------------------
 
     private:
-      /// Emits an event if it is not yet in the queue.
       [[__gnu__::__hot__]]
       OVCB_CONSTEXPR bool tryEmit(int32_t gid);
 
-      OVCB_CONSTEXPR void handleVMemTick();
+      [[__gnu__::__hot__]]
+      OVCB_CONSTEXPR void handleWordVMemTick();
+#ifdef OVCB_BYTE_ORIENTED_VMEM
+      OVCB_CONSTEXPR void handleByteVMemTick();
+#endif
 
       OVCB_INLINE bool GetRandomBit() { return static_cast<bool>(random()); }
 };

@@ -375,49 +375,59 @@ class RandomBitProvider
 
 /*--------------------------------------------------------------------------------------*/
 
-#if 0
+
 class ClockCounter
 {
     public:
-      ClockCounter(uint16_t const low, uint16_t const high)
-            : low_period_(low), high_period_(high)
+      ClockCounter() = default;
+      explicit ClockCounter(uint16_t const low, uint16_t const high)
+          : current_(low), low_period_(low), high_period_(high)
       {}
 
-      bool increment()
+      bool tick()
       {
-            if (counter_ == 0) {
+            if (++counter_ >= current_) {
                   state_   = !state_;
-                  counter_ = get_period();
+                  counter_ = 0;
+                  current_ = get_period();
                   return true;
             }
-            --counter_;
             return false;
       }
 
-      ND bool zero()    const { return counter_ == 0; }
+      ND bool is_zero() const { return counter_ == 0; }
       ND int  counter() const { return counter_; }
+
+      void set_period(uint const high, uint const low)
+      {
+            high_period_ = static_cast<uint16_t>(high);
+            low_period_  = static_cast<uint16_t>(low);
+      }
+
+      std::vector<int32_t> GIDs;
 
     private:
       alignas(int)
-      uint16_t  counter_ = 0;
-      uint16_t  low_period_;
-      uint16_t  high_period_;
-      bool      state_ = false;
+      uint16_t  current_     = 1;
+      uint16_t  counter_     = 0;
+      uint16_t  low_period_  = 1;
+      uint16_t  high_period_ = 1;
+      bool      state_       = false;
 
-      ND uint16_t get_period() const { return state_ ? low_period_ : high_period_; }
+      ND uint16_t get_period() const { return state_ ? high_period_ : low_period_; }
 };
-#endif
 
-class ClockCounter
+
+class TimerCounter
 {
     public:
-      explicit ClockCounter(uint32_t const period = 1)
+      explicit TimerCounter(uint32_t const period = 1)
           : period_(period)
       {}
 
       bool tick()
       {
-            if (++counter_ == period_) {
+            if (++counter_ >= period_) {
                   counter_ = 0;
                   return true;
             }

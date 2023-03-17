@@ -11,7 +11,7 @@ namespace openVCB {
 
 /* Paranoia. */
 static_assert(sizeof(InkState) == 4 && offsetof(InkState, logic) == 3);
-static_assert(sizeof(InkPixel) == 4 && offsetof(InkPixel, meta) == 2);
+static_assert(sizeof(InkPixel) == 4 && offsetof(InkPixel, meta)  == 2);
 static_assert(sizeof(SparseMat) == 24);
 static_assert(sizeof(InstrumentBuffer) == 16);
 static_assert(sizeof(SimulationResult) == 16);
@@ -40,10 +40,11 @@ Project::toggleLatch(int const gid)
       updateQ[0][qSize++] = gid;
 }
 
-Project::Project(uint64_t const seed)
+Project::Project(int64_t const seed, bool const vmemIsBytes)
+    : vmemIsBytes(vmemIsBytes)
 {
-      if (seed <= UINT32_MAX)
-            random = RandomBitProvider{static_cast<uint32_t>(seed & 0xFFFF'FFFF)};
+      if (seed > 0 && seed <= UINT32_MAX)
+            random = RandomBitProvider{static_cast<uint32_t>(seed & INT64_C(0xFFFF'FFFF))};
 }
 
 Project::~Project()
