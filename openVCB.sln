@@ -9,6 +9,7 @@ Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		ClangRelease|x64 = ClangRelease|x64
 		Debug|x64 = Debug|x64
+		IntelShipping|x64 = IntelShipping|x64
 		oneAPIRelease|x64 = oneAPIRelease|x64
 		Release|x64 = Release|x64
 	EndGlobalSection
@@ -17,6 +18,8 @@ Global
 		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.ClangRelease|x64.Build.0 = ClangRelease|x64
 		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.Debug|x64.ActiveCfg = Debug|x64
 		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.Debug|x64.Build.0 = Debug|x64
+		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.IntelShipping|x64.ActiveCfg = IntelShipping|x64
+		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.IntelShipping|x64.Build.0 = IntelShipping|x64
 		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.oneAPIRelease|x64.ActiveCfg = oneAPIRelease|x64
 		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.oneAPIRelease|x64.Build.0 = oneAPIRelease|x64
 		{83618B14-8AC5-49C1-B52B-F97AD8B59AEC}.Release|x64.ActiveCfg = Release|x64

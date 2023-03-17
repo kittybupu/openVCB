@@ -6,7 +6,7 @@
 #define C8kWpReCttGxHsWkLLl1RDjAweb3HDua
 
 // Toggle experimental byte addressed VMem.
-/*#define OVCB_BYTE_ORIENTED_VMEM*/
+//#define OVCB_BYTE_ORIENTED_VMEM
 
 #include "openVCB_Utils.hh"
 #include "openVCB_Data.hh"
@@ -62,6 +62,7 @@ enum class Ink : uint8_t {
       Annotation,
 
       TunnelOff,
+      Mesh,
       TimerOff,
       RandomOff,
       BreakpointOff,
@@ -93,14 +94,15 @@ enum class Ink : uint8_t {
       InvalidFiller     = Filler     | _ink_on,
       InvalidAnnotation = Annotation | _ink_on,
 
-      Tunnel     = TunnelOff     | _ink_on,
-      Timer      = TimerOff      | _ink_on,
-      Random     = RandomOff     | _ink_on,
-      Breakpoint = BreakpointOff | _ink_on,
-      Wireless1  = Wireless1Off  | _ink_on,
-      Wireless2  = Wireless2Off  | _ink_on,
-      Wireless3  = Wireless3Off  | _ink_on,
-      Wireless4  = Wireless4Off  | _ink_on,
+      Tunnel      = TunnelOff     | _ink_on,
+      InvalidMesh = Mesh          | _ink_on,
+      Timer       = TimerOff      | _ink_on,
+      Random      = RandomOff     | _ink_on,
+      Breakpoint  = BreakpointOff | _ink_on,
+      Wireless1   = Wireless1Off  | _ink_on,
+      Wireless2   = Wireless2Off  | _ink_on,
+      Wireless3   = Wireless3Off  | _ink_on,
+      Wireless4   = Wireless4Off  | _ink_on,
 };
 
 

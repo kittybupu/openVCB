@@ -2,6 +2,7 @@
 
 // ReSharper disable CppTooWideScopeInitStatement
 #include "openVCB.h"
+#include <tbb/spin_mutex.h>
 
 #ifdef NDEBUG
 # undef NDEBUG
@@ -36,7 +37,7 @@ class Preprocessor
     private:
       void search(int x, int y);
 
-      void explore_bus(glm::ivec2 pos, unsigned mask);
+      void explore_bus(glm::ivec2 pos, unsigned mask, int gid);
       void handle_read_ink(glm::ivec2 vec);
       void handle_write_ink(glm::ivec2 vec);
 
@@ -45,6 +46,8 @@ class Preprocessor
       ND bool    validate_vector(glm::ivec2 nvec) const;
       ND int32_t calc_index(glm::ivec2 vec) const;
       ND int32_t calc_index(int x, int y) const;
+
+      ND glm::ivec2 get_pos_from_index(int idx) const;
 
       void push_tunnel_exit_not_found_error(glm::ivec2 neighbor, glm::ivec2 tunComp) const;
       void push_invalid_tunnel_entrance_error(glm::ivec2 origComp, glm::ivec2 tmpComp) const;
@@ -69,6 +72,9 @@ class Preprocessor
       // Hash sets to keep track of unique connections
       std::unordered_set<int64_t>              conSet;
       std::vector<std::pair<int32_t, int32_t>> conList;
+
+      std::vector<int> meshList;
+      std::vector<int> meshFinishedGIDs;
 
       enum InkMask : uint32_t {
             MASK_READ     = 2U << 16,
@@ -100,7 +106,7 @@ Preprocessor::do_it()
       p.error_messages = new StringArray(32);
 
        // Turn off any inks that start as off
-#pragma omp parallel for schedule(static, 8192)
+//#pragma omp parallel for schedule(static, 8192)
       for (int i = 0; i < canvas_size; i++) {
             switch (p.image[i].ink) {  // NOLINT(clang-diagnostic-switch-enum)
             default:
@@ -112,8 +118,8 @@ Preprocessor::do_it()
             case Ink::Nor:       case Ink::Nand:
             case Ink::Xnor:      case Ink::Clock:
             case Ink::Led:       case Ink::Bus:
-            case Ink::Tunnel:    case Ink::Timer:
-            case Ink::Random:    case Ink::Breakpoint:
+            case Ink::Timer:     case Ink::Random:
+            case Ink::Tunnel:    case Ink::Breakpoint:
             case Ink::Wireless1: case Ink::Wireless2:
             case Ink::Wireless3: case Ink::Wireless4:
                   p.image[i].ink = SetOff(p.image[i].ink);
@@ -125,6 +131,12 @@ Preprocessor::do_it()
       p.writeMap.n = 0;
       p.indexImage = new int32_t[canvas_size]{-1};
       std::fill_n(p.indexImage, canvas_size, -1);
+
+      for (int i = 0; i < canvas_size; ++i)
+            if (p.image[i].ink == Ink::Mesh)
+                  meshList.push_back(i);
+      if (!meshList.empty())
+            std::ranges::sort(meshList);
 
       for (int y = 0; y < p.height; y++)
             for (int x = 0; x < p.width; x++)
@@ -250,6 +262,7 @@ Preprocessor::search(int const x, int const y)
       case Ink::None:
       case Ink::Cross:
       case Ink::TunnelOff:
+      case Ink::Mesh:
       case Ink::Annotation:
       case Ink::Filler:
             return;
@@ -264,7 +277,7 @@ Preprocessor::search(int const x, int const y)
             writeInks.emplace_back(x, y);
             ink = Ink::TraceOff;
             gid = p.writeMap.n++;
-            break;;
+            break;
 
       case Ink::Wireless1Off:
       case Ink::Wireless2Off:
@@ -311,6 +324,14 @@ Preprocessor::search(int const x, int const y)
                   uint newVis = visited[newIdx];
                   Ink  newInk = p.image[newIdx].ink;
 
+                  if (newInk == Ink::Mesh) {
+                        if (!std::ranges::binary_search(meshFinishedGIDs, gid)) {
+                              meshFinishedGIDs.push_back(gid);
+                              for (auto const mesh : meshList)
+                                    stack.push_back(get_pos_from_index(mesh));
+                        }
+                  }
+
                   // Handle wire bundles.
                   if (ink == Ink::TraceOff && newInk == Ink::BusOff) {
                         // What kind of ink are we again?
@@ -318,15 +339,16 @@ Preprocessor::search(int const x, int const y)
                         uint mask;
 
                         switch (sink) {  // NOLINT(clang-diagnostic-switch-enum)
-                        case Ink::ReadOff:  mask = MASK_READ;   break;
-                        case Ink::WriteOff: mask = MASK_WRITE;  break;
-                        default:            mask = 2U << smeta; break;
+                        case Ink::ReadOff:  mask = MASK_READ;         break;
+                        case Ink::WriteOff: mask = MASK_WRITE;        break;
+                        //case Ink::BusOff:   mask = 2U << (smeta + 6); break;
+                        default:            mask = 2U << smeta;       break;
                         }
                         if (newVis & mask)
                               continue;
 
                         // Hold my beer, we're jumping in.
-                        explore_bus(newComp, mask);
+                        explore_bus(newComp, mask, gid);
 
                         if (newVis & 1) {
                               auto const otherIdx = p.indexImage[newIdx];
@@ -387,7 +409,7 @@ Preprocessor::search(int const x, int const y)
 }
 
 void
-Preprocessor::explore_bus(glm::ivec2 const pos, unsigned const mask)
+Preprocessor::explore_bus(glm::ivec2 const pos, unsigned const mask, int const gid)
 {
       auto const idx = calc_index(pos);
       bundleStack.push_back(pos);
@@ -462,6 +484,12 @@ Preprocessor::explore_bus(glm::ivec2 const pos, unsigned const mask)
                               continue;
                   }
 
+                  if (newInk == Ink::Mesh && !std::ranges::binary_search(meshFinishedGIDs, gid)) {
+                        meshFinishedGIDs.push_back(gid);
+                        for (auto const mesh : meshList)
+                              bundleStack.push_back(get_pos_from_index(mesh));
+                  }
+
                   if (newInk == Ink::BusOff && !(newVis & mask)) {
                         visited[newIdx] |= mask;
                         bundleStack.push_back(newComp);
@@ -469,6 +497,79 @@ Preprocessor::explore_bus(glm::ivec2 const pos, unsigned const mask)
             }
       }
 }
+
+bool
+Preprocessor::handle_tunnel(uint const    nindex,
+                            bool const    ignoreMask,
+                            int32_t const idx,
+                            int          &newIdx,
+                            Ink          &newInk,
+                            glm::ivec2   &newComp)
+{
+      auto const &neighbor = fourNeighbors[nindex];
+      auto const  origComp = newComp;
+      auto const  origPix  = p.image[calc_index(origComp - neighbor)];
+
+      if (!ignoreMask) {
+            auto const mask = get_tunnel_mask(nindex);
+            if (visited[idx] & mask)
+                  return false;
+            visited[idx] |= mask;
+      }
+
+      for (auto tunComp = newComp + neighbor; ; tunComp += neighbor)
+      {
+            if (!validate_vector(tunComp)) {
+                  // BUG ERROR ERROR ERROR ERROR
+                  push_tunnel_exit_not_found_error(neighbor, newComp);
+                  return false;
+            }
+            auto tunIdx = calc_index(tunComp);
+            if (p.image[tunIdx].ink != Ink::TunnelOff)
+                  continue;
+            auto &tunVis = visited[tunIdx];
+
+      retry:
+            tunComp += neighbor;
+            if (!validate_vector(tunComp)) {
+                  // BUG ERROR ERROR ERROR ERROR
+                  push_tunnel_exit_not_found_error(neighbor, newComp);
+                  return false;
+            }
+
+            tunIdx      = calc_index(tunComp);
+            auto tunPix = p.image[tunIdx];
+
+            if (tunPix.ink == Ink::TunnelOff)
+                  goto retry;
+
+            if (tunPix == origPix) {
+                  if (!ignoreMask) {
+                        auto const mask = get_tunnel_mask(nindex + 2);
+                        if (tunVis & mask)
+                              return false;
+                        tunVis |= mask;
+                        visited[tunIdx] |= mask;
+                  }
+                  newComp = tunComp;
+                  newInk  = tunPix.ink;
+                  newIdx  = tunIdx;
+                  return true;
+            }
+
+            auto tmpComp = tunComp - neighbor;
+            tmpComp -= neighbor;
+            tunIdx = calc_index(tmpComp);
+            tunPix = p.image[tunIdx];
+            if (tunPix == p.image[idx]) {
+                  // BUG ERROR ERROR ERROR ERROR
+                  push_invalid_tunnel_entrance_error(origComp, tmpComp);
+                  return false;
+            }
+      }
+}
+
+/*--------------------------------------------------------------------------------------*/
 
 void
 Preprocessor::handle_read_ink(glm::ivec2 const vec)
@@ -528,77 +629,7 @@ Preprocessor::handle_write_ink(glm::ivec2 const vec)
       }
 }
 
-
-bool
-Preprocessor::handle_tunnel(uint const    nindex,
-                            bool const    ignoreMask,
-                            int32_t const idx,
-                            int          &newIdx,
-                            Ink          &newInk,
-                            glm::ivec2   &newComp)
-{
-      auto const &neighbor = fourNeighbors[nindex];
-      auto const origComp  = newComp;
-
-      if (!ignoreMask) {
-            auto const mask = get_tunnel_mask(nindex);
-            if (visited[idx] & mask)
-                  return false;
-            visited[idx] |= mask;
-      }
-
-      for (auto tunComp = newComp + neighbor; ; tunComp += neighbor)
-      {
-            if (!validate_vector(tunComp)) {
-                  // BUG ERROR ERROR ERROR ERROR
-                  push_tunnel_exit_not_found_error(neighbor, newComp);
-                  return false;
-            }
-            auto tunIdx = calc_index(tunComp);
-            if (p.image[tunIdx].ink != Ink::TunnelOff)
-                  continue;
-            auto &tunVis = visited[tunIdx];
-
-      retry:
-            tunComp += neighbor;
-            if (!validate_vector(tunComp)) {
-                  // BUG ERROR ERROR ERROR ERROR
-                  push_tunnel_exit_not_found_error(neighbor, newComp);
-                  return false;
-            }
-
-            tunIdx      = calc_index(tunComp);
-            auto tunPix = p.image[tunIdx];
-
-            if (tunPix.ink == Ink::TunnelOff)
-                  goto retry;
-
-            if (tunPix == p.image[idx]) {
-                  if (!ignoreMask) {
-                        auto const mask = get_tunnel_mask(nindex + 2);
-                        if (tunVis & mask)
-                              return false;
-                        tunVis |= mask;
-                        visited[tunIdx] |= mask;
-                  }
-                  newComp = tunComp;
-                  newInk  = tunPix.ink;
-                  newIdx  = tunIdx;
-                  return true;
-            }
-
-            auto tmpComp = tunComp - neighbor;
-            tmpComp -= neighbor;
-            tunIdx = calc_index(tmpComp);
-            tunPix = p.image[tunIdx];
-            if (tunPix == p.image[idx]) {
-                  // BUG ERROR ERROR ERROR ERROR
-                  push_invalid_tunnel_entrance_error(origComp, tmpComp);
-                  return false;
-            }
-      }
-}
-
+/*--------------------------------------------------------------------------------------*/
 
 bool Preprocessor::validate_vector(glm::ivec2 const nvec) const
 {
@@ -614,6 +645,12 @@ int32_t Preprocessor::calc_index(glm::ivec2 const vec) const
 int32_t Preprocessor::calc_index(int const x, int const y) const
 {
       return x + y * p.width;
+}
+
+glm::ivec2 Preprocessor::get_pos_from_index(int const idx) const
+{
+      auto const [quot, rem] = std::div(idx, p.width);
+      return {rem, quot};
 }
 
 

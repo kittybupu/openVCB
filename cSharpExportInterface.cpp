@@ -122,8 +122,10 @@ EXPORT_API uintptr_t
 getVMemAddress()
 {
 #ifdef OVCB_BYTE_ORIENTED_VMEM 
-      if (proj->)
-      return proj->lastVMemAddr / 4;
+      if (proj->vmemIsBytes)
+            return proj->lastVMemAddr / 4;
+      else
+            return proj->lastVMemAddr;
 #else
       return proj->lastVMemAddr;
 #endif
@@ -279,7 +281,7 @@ addInstrumentBuffer(openVCB::InkState *buf, int const bufSize, int const idx)
 }
 
 EXPORT_API void
-setStateMemory(int *data, int const size)
+setStateMemory(int *data, int const size) noexcept(false)
 {
       if (proj->states_is_native) {
             memcpy(data, proj->states, sizeof(*proj->states) * size);

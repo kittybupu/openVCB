@@ -43,7 +43,7 @@ Project::tick(int32_t const numTicks, int64_t const maxEvents)
 
             for (auto &[index, bp_logic] : breakpoints) {
                   auto const &[_0, _1, logic] = states[index];
-                  if (logic != bp_logic ) {
+                  if (logic != bp_logic) {
                         bp_logic = logic;
                         if (IsOn(logic))
                               res.breakpoint = true;
@@ -59,8 +59,8 @@ Project::tick(int32_t const numTicks, int64_t const maxEvents)
             // VMem implementation.
             if (vmem) {
 #ifdef OVCB_BYTE_ORIENTED_VMEM
-                  if (vmem_is_bytes)
-                        handleByteVMemTick;
+                  if (vmemIsBytes)
+                        handleByteVMemTick();
                   else
                         handleWordVMemTick();
 #else

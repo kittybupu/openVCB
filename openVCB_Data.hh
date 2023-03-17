@@ -8,7 +8,7 @@ namespace openVCB {
 /****************************************************************************************/
 
 
-constexpr uint32_t colorPallet[54] = {
+constexpr uint32_t colorPallet[56] = {
       // Off
       0x000000, //  0
       0x5A5845, //  1 -> TraceOff
@@ -36,6 +36,7 @@ constexpr uint32_t colorPallet[54] = {
       0x3F4B5B, // 19 -> Annotation
 
       0x393A52, // 20 -> TunnelOff
+      0x646A57, // MeshOff
       0x543836, // 21 -> TimerOff
       0x4E5537, // 22 -> RandomOff
       0x542A39, // 23 -> BreakpointOff
@@ -72,6 +73,7 @@ constexpr uint32_t colorPallet[54] = {
       0x3F4B5B, // Annotation (INVALID)
 
       0x535572, // Tunnel
+      0x646A57, // Mesh
       0xFF6700, // Timer
       0xE5FF00, // Random
       0xE00000, // Breakpoint
@@ -81,7 +83,7 @@ constexpr uint32_t colorPallet[54] = {
       0xFF008F, // Wireless 4
 };
 
-constexpr std::string_view inkNames[54] = {
+constexpr std::string_view inkNames[56] = {
       "None",
 
       "Trace (Off)",
@@ -109,6 +111,7 @@ constexpr std::string_view inkNames[54] = {
       "Annotation",
 
       "Tunnel (Off)",
+      "Mesh",
       "Timer (Off)",
       "Random (Off)",
       "Break (Off)",
@@ -143,6 +146,7 @@ constexpr std::string_view inkNames[54] = {
       "INVALID Annotation",
 
       "Tunnel (On)",
+      "INVALID Mesh",
       "Timer (On)",
       "Random (On)",
       "Break (On)",
