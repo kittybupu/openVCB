@@ -4,19 +4,15 @@
 
 // ReSharper disable CppTooWideScope
 // ReSharper disable CppTooWideScopeInitStatement
-
+// ReSharper disable CppUseStructuredBinding
 #include "openVCB.h"
 
 #if (defined __INTEL_COMPILER && false)                                   || \
     (defined __INTEL_LLVM_COMPILER && __INTEL_LLVM_COMPILER >= 20220000L) || \
     (defined __clang__ && __clang__ >= 12)                                || \
     (defined __GNUC__  && __GNUC__  >= 10)
-# define USE_GNU_INLINE_ASM 1
-# if defined __INTELLISENSE__ || defined __RESHARPER__
-// MSVC catches fire if it has to look at inline assembly.
-#  define ASM_VOLATILE(...)
-# else
-#  define ASM_VOLATILE __asm__ __volatile__
+# if !(defined __INTELLISENSE__ || defined __RESHARPER__)
+#  define USE_GNU_INLINE_ASM 1
 # endif
 #endif
 
@@ -41,21 +37,10 @@ Project::tick(int32_t const numTicks, int64_t const maxEvents)
             if (res.numEventsProcessed > maxEvents)
                   return res;
 
-            for (auto &[index, bp_logic] : breakpoints) {
-                  auto const &[_0, _1, logic] = states[index];
-                  if (logic != bp_logic) {
-                        bp_logic = logic;
-                        if (IsOn(logic))
-                              res.breakpoint = true;
-                  }
-            }
-            if (res.breakpoint) [[unlikely]]
-                  return res;
-
             for (auto const &[buffer, bufferSize, idx] : instrumentBuffers)
                   buffer[tickNum % bufferSize] = states[idx];
             ++tickNum;
-
+      
             // VMem implementation.
             if (vmem) {
 #ifdef OVCB_BYTE_ORIENTED_VMEM
@@ -127,6 +112,11 @@ Project::tick(int32_t const numTicks, int64_t const maxEvents)
                         case Logic::RandomOff:
                               nextActive = lastInputs > 0 && (lastActive || GetRandomBit());
                               break;
+                        case Logic::BreakpointOff:
+                              nextActive = lastInputs > 0;
+                              if (nextActive)
+                                    res.breakpoint = true;
+                              break;
                         }
 
                         // Short circuit if the state didnt change
@@ -159,6 +149,8 @@ Project::tick(int32_t const numTicks, int64_t const maxEvents)
                         }
                   }
 
+                  if (res.breakpoint) // Stop early
+                        return res;
                   // Swap buffer
                   std::swap(updateQ[0], updateQ[1]);
             }
@@ -241,7 +233,7 @@ Project::handleByteVMemTick()
 
 # ifdef USE_GNU_INLINE_ASM
             // We can use Intel syntax. Hooray.
-            ASM_VOLATILE (
+            __asm__ __volatile__ (
                   "mov	%[data], [%[vmem] + %q[addr]]"
                   : [data] "=r" (data)
                   : [vmem] "r" (vmem.b), [addr] "r" (addr)
@@ -275,7 +267,7 @@ Project::handleByteVMemTick()
                   data |= static_cast<uint>(IsOn(states[vmData.gids[k]].logic)) << k;
 
 # ifdef USE_GNU_INLINE_ASM
-            ASM_VOLATILE (
+            __asm__ __volatile__ (
                   "shrx	eax, [%[vmem] + %q[addr]], %[numBits]" "\n\t"
                   "shlx	rax, rax, %q[numBits]"                 "\n\t"
                   "or	eax, %[data]"                          "\n\t"

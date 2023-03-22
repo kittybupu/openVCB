@@ -6,7 +6,7 @@
 #define C8kWpReCttGxHsWkLLl1RDjAweb3HDua
 
 // Toggle experimental byte addressed VMem.
-//#define OVCB_BYTE_ORIENTED_VMEM
+#define OVCB_BYTE_ORIENTED_VMEM
 
 #include "openVCB_Utils.hh"
 #include "openVCB_Data.hh"
@@ -123,6 +123,7 @@ enum class Logic : uint8_t {
       ClockOff,
       TimerOff,
       RandomOff,
+      BreakpointOff,
 
       _numTypes,
       _ink_on = 0x80,
@@ -135,6 +136,7 @@ enum class Logic : uint8_t {
       Clock    = ClockOff    | _ink_on,
       Timer    = TimerOff    | _ink_on,
       Random   = RandomOff   | _ink_on,
+      Breakpoint = BreakpointOff | _ink_on,
 };
 
 
@@ -226,10 +228,6 @@ class Project
             0xFF0000, 0x00FF00
       };
 
-      //std::vector<int32_t> clockGIDs;
-      //uint32_t             clockCounter = 0;
-      //uint32_t             clockPeriod  = 2;
-
       ClockCounter tickClock;
       TimerCounter realtimeClock;
 
@@ -244,10 +242,9 @@ class Project
       Ink *stateInks = nullptr;
 
       // Map of symbols during assembleVmem().
-      std::map<std::string, int64_t>     assemblySymbols;
-      std::map<int64_t, int64_t>         lineNumbers;
-      std::unordered_map<int32_t, Logic> breakpoints;
-      std::vector<InstrumentBuffer>      instrumentBuffers;
+      std::map<std::string, int64_t> assemblySymbols;
+      std::map<int64_t, int64_t>     lineNumbers;
+      std::vector<InstrumentBuffer>  instrumentBuffers;
 
       uint64_t tickNum = 0;
 

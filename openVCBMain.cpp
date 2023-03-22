@@ -12,7 +12,7 @@ void logf(PRINTF_FORMAT_STRING format, ...)
             return;
       va_list ap;
       va_start(ap, format);
-      std::ignore = ::vfprintf(log, format, ap);
+      std::ignore = vfprintf(log, format, ap);
       va_end(ap);
       std::ignore = fputc('\n', log);
       std::ignore = fflush(log);
@@ -20,14 +20,18 @@ void logf(PRINTF_FORMAT_STRING format, ...)
 
 void logs(char const *msg, size_t const len)
 {
-      fwrite(msg, 1, len, log);
-      fputc('\n', log);
+      if (!log)
+            return;
+      std::ignore = fwrite(msg, 1, len, log);
+      std::ignore = fputc('\n', log);
 }
 
 void logs(char const *msg)
 {
-      fputs(msg, log);
-      fputc('\n', log);
+      if (!log)
+            return;
+      std::ignore = fputs(msg, log);
+      std::ignore = fputc('\n', log);
 }
 
 } // namespace openVCB::util
@@ -46,6 +50,7 @@ DllMain(HINSTANCE const inst, DWORD const fdwReason, LPVOID)
 
       switch (fdwReason) {
       case DLL_PROCESS_ATTACH: {
+# if defined _DEBUG || !defined NDEBUG
             std::ignore = ::_set_abort_behavior(0, _WRITE_ABORT_MSG);
             std::ignore = ::signal(SIGABRT, SIG_IGN);
 
@@ -65,7 +70,7 @@ DllMain(HINSTANCE const inst, DWORD const fdwReason, LPVOID)
                   ::MessageBoxW(nullptr, L"Error opening openVCB.dll log file.", L"ERROR", MB_OK);
                   ::exit(1);
             }
-
+# endif
             break;
       }
 

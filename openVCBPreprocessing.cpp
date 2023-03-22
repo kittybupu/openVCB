@@ -37,11 +37,12 @@ class Preprocessor
     private:
       void search(int x, int y);
 
-      void explore_bus(glm::ivec2 pos, unsigned mask, int gid);
+      void explore_bus(glm::ivec2 pos, InkPixel const &pix, uint64_t mask, int gid);
       void handle_read_ink(glm::ivec2 vec);
       void handle_write_ink(glm::ivec2 vec);
 
-      bool handle_tunnel(uint nindex, bool ignoreMask, int32_t idx, int &newIdx, Ink &newInk, glm::ivec2 &newComp);
+      bool handle_tunnel(unsigned nindex, bool ignoreMask, int idx, int &newIdx,
+                         Ink &newInk, glm::ivec2 &newComp);
 
       ND bool    validate_vector(glm::ivec2 nvec) const;
       ND int32_t calc_index(glm::ivec2 vec) const;
@@ -63,37 +64,74 @@ class Preprocessor
       std::vector<glm::ivec2> bundleStack;
       std::vector<glm::ivec2> readInks;
       std::vector<glm::ivec2> writeInks;
-      std::vector<uint32_t>   visited;
       std::vector<Group>      indexDict;
 
-      std::unordered_multimap<int32_t, int32_t> bundleCons;
-      std::unordered_set<int64_t>               bundleConsSet;
+      std::unordered_multimap<int, int> bundleCons;
+      std::unordered_set<int64_t>       bundleConsSet;
 
       // Hash sets to keep track of unique connections
-      std::unordered_set<int64_t>              conSet;
-      std::vector<std::pair<int32_t, int32_t>> conList;
+      std::unordered_set<int64_t>      conSet;
+      std::vector<std::pair<int, int>> conList;
 
       std::vector<int> meshList;
-      std::vector<int> meshFinishedGIDs;
 
-      enum InkMask : uint32_t {
-            MASK_READ     = 2U << 16,
-            MASK_WRITE    = 2U << 17,
-            MASK_TUNNEL_1 = 2U << 18,
-            MASK_TUNNEL_2 = 2U << 19,
-            MASK_TUNNEL_3 = 2U << 20,
-            MASK_TUNNEL_4 = 2U << 21,
+      std::array<std::span<uint64_t>, 2> visited;
+      std::unique_ptr<uint64_t[]>        visited_ptrs_[2];
+
+      enum InkMask : uint64_t {
+            MASK_READ  = 2U << 16,
+            MASK_WRITE = 2U << 17,
+
+            SHIFT_OFFSET_TUNNEL = 18,
+            SHIFT_OFFSET_BUS    = 40,
       };
 
-      ND static unsigned get_tunnel_mask(uint const i) { return 2U << (18U + (i % 4U)); }
+      ND static constexpr uint64_t get_tunnel_mask(unsigned const i)
+      {
+            return UINT64_C(2) << (SHIFT_OFFSET_TUNNEL + (i % 4U));
+      }
+
+      ND static constexpr uint64_t get_mask(InkPixel const &pix)
+      {
+            switch (pix.ink) { // NOLINT(clang-diagnostic-switch-enum)
+            case Ink::ReadOff:       return MASK_READ;
+            case Ink::WriteOff:      return MASK_WRITE;
+            case Ink::TraceOff:      return UINT64_C(2) << pix.meta;
+            case Ink::BufferOff:     return UINT64_C(2) << 22;
+            case Ink::OrOff:         return UINT64_C(2) << 23;
+            case Ink::NandOff:       return UINT64_C(2) << 24;
+            case Ink::NotOff:        return UINT64_C(2) << 25;
+            case Ink::NorOff:        return UINT64_C(2) << 26;
+            case Ink::AndOff:        return UINT64_C(2) << 27;
+            case Ink::XorOff:        return UINT64_C(2) << 28;
+            case Ink::XnorOff:       return UINT64_C(2) << 29;
+            case Ink::ClockOff:      return UINT64_C(2) << 30;
+            case Ink::LatchOff:      return UINT64_C(2) << 31;
+            case Ink::LedOff:        return UINT64_C(2) << 32;
+            case Ink::TimerOff:      return UINT64_C(2) << 33;
+            case Ink::RandomOff:     return UINT64_C(2) << 34;
+            case Ink::BreakpointOff: return UINT64_C(2) << 35;
+            case Ink::Wireless1Off:  return UINT64_C(2) << 36;
+            case Ink::Wireless2Off:  return UINT64_C(2) << 37;
+            case Ink::Wireless3Off:  return UINT64_C(2) << 38;
+            case Ink::Wireless4Off:  return UINT64_C(2) << 39;
+            case Ink::BusOff:        return UINT64_C(2) << SHIFT_OFFSET_BUS;
+            default:                 return 0;
+            }
+
+      }
 };
 
 
 Preprocessor::Preprocessor(Project &proj) noexcept
     : p(proj),
-      canvas_size(static_cast<ssize_t>(p.width) * static_cast<ssize_t>(p.height)),
-      visited(canvas_size, 0)
-{}
+      canvas_size(static_cast<ssize_t>(p.width) * static_cast<ssize_t>(p.height))
+{
+      visited_ptrs_[0] = std::make_unique<uint64_t[]>(canvas_size);
+      visited_ptrs_[1] = std::make_unique<uint64_t[]>(canvas_size);
+      visited[0]       = std::span(visited_ptrs_[0].get(), canvas_size);
+      visited[1]       = std::span(visited_ptrs_[1].get(), canvas_size);
+}
 
 
 /*--------------------------------------------------------------------------------------*/
@@ -122,6 +160,7 @@ Preprocessor::do_it()
             case Ink::Tunnel:    case Ink::Breakpoint:
             case Ink::Wireless1: case Ink::Wireless2:
             case Ink::Wireless3: case Ink::Wireless4:
+            case Ink::InvalidMesh:
                   p.image[i].ink = SetOff(p.image[i].ink);
             }
       }
@@ -145,14 +184,12 @@ Preprocessor::do_it()
       p.numGroups = p.writeMap.n;
 
       // Sort groups by ink vs. component then by morton code.
-      std::ranges::sort(indexDict, [](Group const &a, Group const &b) -> bool
+      std::ranges::sort(indexDict, [](Group const &a, Group const &b)
       {
             if (a.ink == b.ink)
                   return a.gid < b.gid;
             return a.ink < b.ink;
       });
-      glm::ivec2 foo;
-      foo[0];
 
       // List of connections.
       // Build state vector.
@@ -165,12 +202,12 @@ Preprocessor::do_it()
       p.writeMap.ptr = new int[p.writeMap.n + 1];
 
       for (int i = 0; i < p.writeMap.n; ++i) {
-            auto const g   = indexDict[i];
-            InkState  &s   = p.states[i];
-            p.stateInks[i] = g.ink;
-            s.logic        = g.logic;
-            s.visited      = false;
-            s.activeInputs = 0;
+            Group const &g  = indexDict[i];
+            InkState    &s  = p.states[i];
+            s.logic         = g.logic;
+            s.visited       = false;
+            s.activeInputs  = 0;
+            p.stateInks[i]  = g.ink;
 
             p.writeMap.ptr[g.gid] = i;
       }
@@ -250,7 +287,7 @@ Preprocessor::search(int const x, int const y)
 {
       int const top_idx = calc_index(x, y);
 
-      if (visited[top_idx] & 1)
+      if (visited[0][top_idx] & 1)
             return;
 
       // Check what ink this group is of
@@ -293,11 +330,6 @@ Preprocessor::search(int const x, int const y)
             break;
       }
 
-      case Ink::BreakpointOff:
-            gid = p.writeMap.n++;
-            p.breakpoints[gid] = inkLogicType(ink);
-            break;
-
       default:
             gid = p.writeMap.n++;
             break;
@@ -305,62 +337,51 @@ Preprocessor::search(int const x, int const y)
 
       // DFS
       stack.emplace_back(x, y);
-      visited[top_idx] |= 1;
+      visited[0][top_idx] |= 1;
 
       while (!stack.empty())
       {
-            auto const comp   = stack.back();
-            auto const idx    = calc_index(comp);
-            p.indexImage[idx] = gid;
+            auto const comp = stack.back();
+            auto const idx  = calc_index(comp);
             stack.pop_back();
+            if (p.image[idx].ink != Ink::Mesh)
+                  p.indexImage[idx] = gid;
 
-            for (uint nindex = 0; nindex < 4; ++nindex) {
+            for (unsigned nindex = 0; nindex < 4; ++nindex)
+            {
                   auto const &neighbor = fourNeighbors[nindex];
-                  glm::ivec2 newComp  = comp + neighbor;
+                  glm::ivec2 newComp   = comp + neighbor;
                   if (!validate_vector(newComp))
                         continue;
 
                   int  newIdx = calc_index(newComp);
-                  uint newVis = visited[newIdx];
                   Ink  newInk = p.image[newIdx].ink;
 
-                  if (newInk == Ink::Mesh) {
-                        if (!std::ranges::binary_search(meshFinishedGIDs, gid)) {
-                              meshFinishedGIDs.push_back(gid);
-                              for (auto const mesh : meshList)
-                                    stack.push_back(get_pos_from_index(mesh));
-                        }
-                  }
-
                   // Handle wire bundles.
-                  if (ink == Ink::TraceOff && newInk == Ink::BusOff) {
+                  if (ink != Ink::BusOff && newInk == Ink::BusOff) {
                         // What kind of ink are we again?
-                        auto const [sink, smeta] = p.image[idx];
-                        uint mask;
+                        auto const bus_pix = p.image[idx];
+                        auto const mask    = get_mask(bus_pix);
 
-                        switch (sink) {  // NOLINT(clang-diagnostic-switch-enum)
-                        case Ink::ReadOff:  mask = MASK_READ;         break;
-                        case Ink::WriteOff: mask = MASK_WRITE;        break;
-                        //case Ink::BusOff:   mask = 2U << (smeta + 6); break;
-                        default:            mask = 2U << smeta;       break;
-                        }
-                        if (newVis & mask)
+                        if (mask != 0) {
+                              if (visited[0][newIdx] & mask)
+                                    continue;
+
+                              // Hold my beer, we're jumping in.
+                              explore_bus(newComp, bus_pix, mask, gid);
+
+                              if (visited[0][newIdx] & 1) {
+                                    auto const otherIdx = p.indexImage[newIdx];
+                                    auto const shifted  = static_cast<int64_t>(gid) << 32;
+                                    if (bundleConsSet.insert(shifted | gid).second)
+                                          bundleCons.emplace(gid, otherIdx);
+                              }
                               continue;
-
-                        // Hold my beer, we're jumping in.
-                        explore_bus(newComp, mask, gid);
-
-                        if (newVis & 1) {
-                              auto const otherIdx = p.indexImage[newIdx];
-                              auto const shifted  = static_cast<int64_t>(gid) << 32;
-                              if (bundleConsSet.insert(shifted | gid).second)
-                                    bundleCons.emplace(gid, otherIdx);
                         }
-                        continue;
                   }
 
-                  if (newVis & 1) {
-                        if (ink == Ink::BusOff && util::eq_any(newInk, Ink::TraceOff, Ink::ReadOff, Ink::WriteOff)) {
+                  if (visited[0][newIdx] & 1) {
+                        if (ink == Ink::BusOff && newInk != Ink::BusOff && get_mask(p.image[idx])) {
                               // Try to insert new connection
                               auto const otherIdx = p.indexImage[newIdx];
                               auto const shifted  = static_cast<int64_t>(gid) << 32;
@@ -377,7 +398,7 @@ Preprocessor::search(int const x, int const y)
                               continue;
 
                         newIdx = calc_index(newComp);
-                        if (visited[newIdx] & 1)
+                        if (visited[0][newIdx] & 1)
                               continue;
                         newInk = p.image[newIdx].ink;
                         if (newInk == Ink::TunnelOff)
@@ -387,18 +408,27 @@ Preprocessor::search(int const x, int const y)
                         if (!handle_tunnel(nindex, false, idx, newIdx, newInk, newComp))
                               continue;
                   }
+                  else if (newInk == Ink::Mesh) {
+                        auto const mask = get_mask(pix);
+                        if (visited[0][newIdx] & mask)
+                              continue;
+                        visited[0][newIdx] |= mask;
+                        for (auto const mesh : meshList)
+                              stack.push_back(get_pos_from_index(mesh));
+                        continue;
+                  }
 
                   // Push back if Allowable
                   if (newInk == Ink::ReadOff && ink == Ink::TraceOff) {
                         readInks.push_back(newComp);
-                        visited[newIdx] |= 1;
+                        visited[0][newIdx] |= 1;
                         stack.push_back(newComp);
                   } else if (newInk == Ink::WriteOff && ink == Ink::TraceOff) {
                         writeInks.push_back(newComp);
-                        visited[newIdx] |= 1;
+                        visited[0][newIdx] |= 1;
                         stack.push_back(newComp);
                   } else if (newInk == ink) {
-                        visited[newIdx] |= 1;
+                        visited[0][newIdx] |= 1;
                         stack.push_back(newComp);
                   }
             }
@@ -409,11 +439,11 @@ Preprocessor::search(int const x, int const y)
 }
 
 void
-Preprocessor::explore_bus(glm::ivec2 const pos, unsigned const mask, int const gid)
+Preprocessor::explore_bus(glm::ivec2 const pos, InkPixel const &pix, uint64_t const mask, int const gid)
 {
       auto const idx = calc_index(pos);
       bundleStack.push_back(pos);
-      visited[idx] |= mask;
+      visited[0][idx] |= mask;
 
       while (!bundleStack.empty())
       {
@@ -421,77 +451,93 @@ Preprocessor::explore_bus(glm::ivec2 const pos, unsigned const mask, int const g
             bundleStack.pop_back();
 
             // Check four directions
-            for (uint nindex = 0; nindex < 4; ++nindex) {
+            for (unsigned nindex = 0; nindex < 4; ++nindex) {
                   glm::ivec2 const &neighbor = fourNeighbors[nindex];
                   glm::ivec2 newComp = comp + neighbor;
                   if (!validate_vector(newComp))
                         continue;
 
-                  int  newIdx = calc_index(newComp);
-                  uint newVis = visited[newIdx];
-                  // Check if already visited
+                  int   newIdx = calc_index(newComp);
+                  auto &newVis = visited[0][newIdx];
+                  auto newPix  = p.image[newIdx];
 
-                  auto [newInk, newMeta] = p.image[newIdx];
-
-                  if ((newVis & mask) == 2U)
+                  // Let's not waste time.
+                  if (newPix.ink == Ink::None)
                         continue;
+
                   // Handle different inks
-                  if (newInk == Ink::ReadOff) {
+                  if (newPix.ink == Ink::ReadOff) {
                         if (newVis & 1)
                               continue;
                         readInks.push_back(newComp);
-                        if ((mask >> 16) == 2) {
-                              visited[newIdx] |= 1;
+                        if (pix.ink == Ink::ReadOff) {
+                              newVis |= 1;
                               stack.push_back(newComp);
                         }
                         continue;
                   }
-                  if (newInk == Ink::WriteOff) {
+                  if (newPix.ink == Ink::WriteOff) {
                         if (newVis & 1)
                               continue;
                         writeInks.push_back(newComp);
-                        if ((mask >> 17) == 2) {
-                              visited[newIdx] |= 1;
+                        if (pix.ink == Ink::WriteOff) {
+                              newVis |= 1;
                               stack.push_back(newComp);
                         }
                         continue;
                   }
-                  if (newInk == Ink::TraceOff) {
+                  if (newPix.ink == Ink::TraceOff) {
                         if (newVis & 1)
                               continue;
                         // We will only connect to traces of the matching color
-                        if ((mask >> newMeta) == 2) {
-                              visited[newIdx] |= 1;
+                        if (pix.meta == newPix.meta) {
+                              newVis |= 1;
                               stack.push_back(newComp);
                         }
                         continue;
                   }
-                  if (newInk == Ink::Cross) {
+                  if (newPix.ink != Ink::BusOff && pix == newPix) {
+                        if (newVis & 1)
+                              continue;
+                        // We will only connect to traces of the matching color
+                        if (!(newVis & mask)) {
+                              newVis |= 1;
+                              stack.push_back(newComp);
+                        }
+                        continue;
+                  }
+
+                  if (newPix.ink == Ink::Cross) {
                         newComp += neighbor;
                         if (!validate_vector(newComp))
                               continue;
 
                         newIdx = calc_index(newComp);
-                        if (visited[newIdx] & mask)
+                        if (newVis & mask)
                               continue;
-                        newInk = p.image[newIdx].ink;
+                        newPix.ink = p.image[newIdx].ink;
                   }
-                  else if (newInk == Ink::TunnelOff) {
-                        if (visited[newIdx] & mask)
+                  else if (newPix.ink == Ink::TunnelOff) {
+                        if (newVis & mask)
                               continue;
-                        visited[newIdx] |= mask;
-                        if (!handle_tunnel(nindex, true, idx, newIdx, newInk, newComp))
+                        newVis |= mask;
+                        if (!handle_tunnel(nindex, true, idx, newIdx, newPix.ink, newComp))
                               continue;
                   }
-
-                  if (newInk == Ink::Mesh && !std::ranges::binary_search(meshFinishedGIDs, gid)) {
-                        meshFinishedGIDs.push_back(gid);
+                  else if (newPix.ink == Ink::Mesh) {
+                        if (visited[1][newIdx] & mask)
+                              continue;
+                        visited[1][newIdx] |= mask;
                         for (auto const mesh : meshList)
                               bundleStack.push_back(get_pos_from_index(mesh));
+                        continue;
                   }
 
-                  if (newInk == Ink::BusOff && !(newVis & mask)) {
-                        visited[newIdx] |= mask;
+                  if (newPix.ink == Ink::BusOff) {
+                        newVis = visited[0][newIdx];
+                        if (newVis & mask)
+                              continue;
+                        newVis |= mask;
                         bundleStack.push_back(newComp);
                   }
             }
@@ -499,12 +545,12 @@ Preprocessor::explore_bus(glm::ivec2 const pos, unsigned const mask, int const g
 }
 
 bool
-Preprocessor::handle_tunnel(uint const    nindex,
-                            bool const    ignoreMask,
-                            int32_t const idx,
-                            int          &newIdx,
-                            Ink          &newInk,
-                            glm::ivec2   &newComp)
+Preprocessor::handle_tunnel(unsigned const nindex,
+                            bool const     ignoreMask,
+                            int32_t const  idx,
+                            int           &newIdx,
+                            Ink           &newInk,
+                            glm::ivec2    &newComp)
 {
       auto const &neighbor = fourNeighbors[nindex];
       auto const  origComp = newComp;
@@ -512,9 +558,9 @@ Preprocessor::handle_tunnel(uint const    nindex,
 
       if (!ignoreMask) {
             auto const mask = get_tunnel_mask(nindex);
-            if (visited[idx] & mask)
+            if (visited[0][idx] & mask)
                   return false;
-            visited[idx] |= mask;
+            visited[0][idx] |= mask;
       }
 
       for (auto tunComp = newComp + neighbor; ; tunComp += neighbor)
@@ -527,7 +573,7 @@ Preprocessor::handle_tunnel(uint const    nindex,
             auto tunIdx = calc_index(tunComp);
             if (p.image[tunIdx].ink != Ink::TunnelOff)
                   continue;
-            auto &tunVis = visited[tunIdx];
+            auto &tunVis = visited[0][tunIdx];
 
       retry:
             tunComp += neighbor;
@@ -549,7 +595,7 @@ Preprocessor::handle_tunnel(uint const    nindex,
                         if (tunVis & mask)
                               return false;
                         tunVis |= mask;
-                        visited[tunIdx] |= mask;
+                        visited[0][tunIdx] |= mask;
                   }
                   newComp = tunComp;
                   newInk  = tunPix.ink;
@@ -662,12 +708,12 @@ Preprocessor::push_tunnel_exit_not_found_error(glm::ivec2 const neighbor,
                         : neighbor.x == -1 ? "west"
                         : neighbor.y == 1  ? "south"
                                            : "north";
-      char      *buf  = p.error_messages->push_blank(256);
-      auto const size = snprintf(
-          buf, 256,
+      char      *buf  = p.error_messages->push_blank(128);
+      auto const size = sprintf(
+          buf,
           R"(Error @ (%d, %d): No exit tunnel found in a search to the %s.)",
           tunComp.x, tunComp.y, dir);
-      util::logs(buf, static_cast<size_t>(size));
+      util::logs(buf, size);
 }
 
 
@@ -675,11 +721,10 @@ void
 Preprocessor::push_invalid_tunnel_entrance_error(glm::ivec2 const origComp,
                                                  glm::ivec2 const tmpComp) const
 {
-      char      *buf = p.error_messages->push_blank(256);
-      auto const size = snprintf(
-            buf, 256,
-            "Error (%d, %d) -> (%d, %d): While searching for an exit, another "
-            "tunnel entrance for the same ink was encountered.",
+      char      *buf = p.error_messages->push_blank(128);
+      auto const size = sprintf(
+            buf,
+            "Error @ (%d, %d) & (%d, %d): Two consecutive tunnel entrances for the same ink found.",
             origComp.x, origComp.y, tmpComp.x, tmpComp.y);
       util::logs(buf, size);
 }

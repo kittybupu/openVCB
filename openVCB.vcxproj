@@ -472,7 +472,7 @@
       <StringPooling>
       </StringPooling>
       <Optimization>MaxSpeedHighLevel</Optimization>
-      <AdditionalOptions>/Zc:preprocessor /Zc:__cplusplus -Qunused-arguments /clang:-flto=full -Qiopenmp /clang:-mtune=native /clang:-march=native /clang:-Ofast /clang:-fvectorize /clang:-fslp-vectorize /clang:-masm=intel %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Zc:preprocessor /Zc:__cplusplus -Qunused-arguments /clang:-mprefer-vector-width=512 /clang:-flto=full -Qiopenmp /clang:-mtune=native /clang:-march=native /clang:-Ofast /clang:-fvectorize /clang:-fslp-vectorize /clang:-masm=intel %(AdditionalOptions)</AdditionalOptions>
       <ExceptionHandling>false</ExceptionHandling>
     </ClCompile>
     <Link>

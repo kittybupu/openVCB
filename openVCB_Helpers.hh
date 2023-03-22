@@ -164,6 +164,9 @@ inline Logic inkLogicType(Ink ink)
       case Ink::AndOff:
             return Logic::ZeroOff;
 
+      case Ink::BreakpointOff:
+            return Logic::BreakpointOff;
+
       default:
             return Logic::NonZeroOff;
       }
@@ -349,9 +352,9 @@ class RandomBitProvider
           : random_engine_(seed), current_(random_engine_())
       {}
 
-      ND unsigned operator()()
+      ND NOINLINE unsigned operator()()
       {
-            if (avail_ > 0) {
+            if (avail_ > 0) [[likely]] {
                   --avail_;
             } else {
                   avail_   = num_bits - 1U;
@@ -427,7 +430,7 @@ class TimerCounter
 
       bool tick()
       {
-            if (++counter_ >= period_) {
+            if (++counter_ >= period_) [[unlikely]] {
                   counter_ = 0;
                   return true;
             }

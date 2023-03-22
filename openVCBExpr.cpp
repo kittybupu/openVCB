@@ -39,7 +39,7 @@ class parser {
       }
 
       ATTRIBUTE_PRINTF(2, 3)
-      int formatError(PRINTF_FORMAT_STRING fmt, ...);
+      int formatError(char const *fmt, ...);
 
 public:
       explicit parser(SymMap &vars);

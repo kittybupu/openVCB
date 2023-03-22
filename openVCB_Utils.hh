@@ -199,7 +199,7 @@
 # define NORETURN          __attribute__((__noreturn__))
 # define DEPRECATED        __attribute__((__deprecated__))
 # define DEPRECATED_MSG(x) __attribute__((__deprecated__(x)))
-#elif defined _MSC_VER
+#elif defined _MSC_VER || defined __INTELLISENSE__ || defined __RESHARPER__
 # define UNUSED            __pragma(warning(suppress : 4100 4101 4102))
 # define NODISCARD         _Check_return_
 # define FALLTHROUGH       __fallthrough
@@ -237,10 +237,12 @@
 #endif
 
 #if !defined ATTRIBUTE_PRINTF
-# if defined __clang__ || defined __INTEL_LLVM_COMPILER || !defined __GNUC__
-#  define ATTRIBUTE_PRINTF(...) __attribute__((__format__(__printf__, __VA_ARGS__)))
+# if defined __RESHARPER__ || defined __INTEL_COMPILER || defined __INTEL_LLVM_COMPILER
+#  define ATTRIBUTE_PRINTF(fst, snd) [[gnu::format(printf, fst, snd)]]
+# elif defined __clang__ || !defined __GNUC__
+#  define ATTRIBUTE_PRINTF(fst, snd) [[__gnu__::__format__(printf, fst, snd)]]
 # else
-#  define ATTRIBUTE_PRINTF(...) __attribute__((__format__(__gnu_printf__, __VA_ARGS__)))
+#  define ATTRIBUTE_PRINTF(fst, snd) [[__gnu__::__format__(gnu_printf, fst, snd)]]
 # endif
 #endif
 
@@ -261,6 +263,9 @@
 # else
 #  error "I have no useful warning message to give here."
 # endif
+#endif
+#if __WORDSIZE != 64
+# error "We don't serve your kind here. 64-bit computers only."
 #endif
 
 #if __WORDSIZE == 64 && (defined __amd64__ || defined __amd64 || defined __x86_64__ || \
@@ -299,10 +304,11 @@ namespace openVCB {
 using namespace ::std::literals;
 namespace util {
 
-extern void logf(PRINTF_FORMAT_STRING format, ...) ATTRIBUTE_PRINTF(1, 2);
+ATTRIBUTE_PRINTF(1, 2)
+extern void logf(PRINTF_FORMAT_STRING format, ...);
 
-extern void logs(char const *msg, size_t len);
-extern void logs(char const *msg);
+extern void logs(_In_ char const *msg, size_t len) ATTRIBUTE_NONNULL(1);
+extern void logs(_In_ char const *msg) ATTRIBUTE_NONNULL(1);
 inline void logs(std::string const &msg)     { logs(msg.data(), msg.size()); }
 inline void logs(std::string_view const msg) { logs(msg.data(), msg.size()); }
 

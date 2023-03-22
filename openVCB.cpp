@@ -17,6 +17,7 @@ static_assert(sizeof(InstrumentBuffer) == 16);
 static_assert(sizeof(SimulationResult) == 16);
 static_assert(sizeof(LatchInterface) == 284);
 static_assert(sizeof(VMemWrapper) == sizeof(void *));
+static_assert(sizeof(int) == 4);
 
 
 void
@@ -88,13 +89,13 @@ Project::sample(glm::ivec2 const pos) const
 void
 Project::addBreakpoint(int const gid)
 {
-      breakpoints[gid] = states[gid].logic;
+      //breakpoints[gid] = states[gid].logic;
 }
 
 void
 Project::removeBreakpoint(int const gid)
 {
-      breakpoints.erase(gid);
+      //breakpoints.erase(gid);
 }
 
 

@@ -10,43 +10,43 @@ namespace openVCB {
 
 constexpr uint32_t colorPallet[56] = {
       // Off
-      0x000000, //  0
-      0x5A5845, //  1 -> TraceOff
-      0x2E475D, //  2 -> Read
-      0x4D383E, //  3 -> Write
-      0x66788E, //  4 -> Cross
+      0x000000,
+      0x5A5845, // Trace_Off
+      0x2E475D, // Read_Off
+      0x4D383E, // Write_Off
+      0x66788E, // Cross_Off
 
-      0x3E4D3E, //  5 -> Buffer
-      0x384B56, //  6 -> OR
-      0x4D392F, //  7 -> NAND
+      0x3E4D3E, // Buffer_Off
+      0x384B56, // OR_Off
+      0x4D392F, // NAND_Off
 
-      0x4D3744, //  8 -> NOT
-      0x1A3C56, //  9 -> NOR
-      0x4D453E, // 10 -> AND
+      0x4D3744, // NOT_Off
+      0x1A3C56, // NOR_Off
+      0x4D453E, // AND_Off
 
-      0x433D56, // 11 -> XOR
-      0x3B2854, // 12 -> XNOR
+      0x433D56, // XOR_Off
+      0x3B2854, // XNOR_Off
 
-      0x4D243C, // 13 -> Clock
-      0x384D47, // 14 -> Latch
-      0x323841, // 15 -> LEDOff
-      0x283769, // 16 -> BusOff
+      0x4D243C, // Clock_Off
+      0x384D47, // Latch_Off
+      0x323841, // LED_Off
+      0x283769, // Bus_Off
 
-      0xA1AB8C, // 18 -> Filler
-      0x3F4B5B, // 19 -> Annotation
+      0xA1AB8C, // Filler_Off
+      0x3F4B5B, // Annotation_Off
 
-      0x393A52, // 20 -> TunnelOff
-      0x646A57, // MeshOff
-      0x543836, // 21 -> TimerOff
-      0x4E5537, // 22 -> RandomOff
-      0x542A39, // 23 -> BreakpointOff
-      0x562660, // 24 -> Wireless1Off
-      0x55265E, // 25 -> Wireless2Off
-      0x57265C, // 26 -> Wireless3Off
-      0x582758, // 27 -> Wireless4Off
+      0x393A52, // Tunnel_Off
+      0x646A57, // Mesh_Off
+      0x543836, // Timer_Off
+      0x4E5537, // Random_Off
+      0x542A39, // Breakpoint_Off
+      0x562660, // Wireless_1_Off
+      0x55265E, // Wireless_2_Off
+      0x57265C, // Wireless_3_Off
+      0x582758, // Wireless_4_Off
 
       // On
-      0x000000, // 
+      0x000000,
       0xA19856, // Trace
       0x63B1FF, // Read
       0xFF5E5E, // Write
@@ -77,10 +77,10 @@ constexpr uint32_t colorPallet[56] = {
       0xFF6700, // Timer
       0xE5FF00, // Random
       0xE00000, // Breakpoint
-      0xFF00BF, // Wireless 1
-      0xFF00AF, // Wireless 2
-      0xFF009F, // Wireless 3
-      0xFF008F, // Wireless 4
+      0xFF00BF, // Wireless_1
+      0xFF00AF, // Wireless_2
+      0xFF009F, // Wireless_3
+      0xFF008F, // Wireless_4
 };
 
 constexpr std::string_view inkNames[56] = {
