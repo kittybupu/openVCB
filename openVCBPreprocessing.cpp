@@ -31,13 +31,14 @@ class Preprocessor
       Preprocessor &operator=(Preprocessor &&) noexcept = delete;
 
       void do_it();
+      void tryInsertConnection(int gid, int newIdx);
 
       /*--------------------------------------------------------------------------------*/
 
     private:
       void search(int x, int y);
 
-      void explore_bus(glm::ivec2 pos, InkPixel const &pix, uint64_t mask, int gid);
+      void explore_bus(glm::ivec2 pos, InkPixel const &pix, uint64_t mask);
       void handle_read_ink(glm::ivec2 vec);
       void handle_write_ink(glm::ivec2 vec);
 
@@ -227,8 +228,8 @@ Preprocessor::do_it()
 
       // Stores rows per colume.
       std::vector accu(p.writeMap.n, 0);
-      for (auto const &e : conList)
-            accu[e.first] += 1;
+      for (auto const key : conList | std::views::keys)
+            accu[key] += 1;
 
       // Construct adjacentcy matrix
       p.writeMap.nnz  = static_cast<int32_t>(conList.size());
@@ -246,7 +247,7 @@ Preprocessor::do_it()
       for (auto const &[first, second] : conList) {
             // Set the active inputs of AND to be -numInputs
             if (util::eq_any(p.stateInks[second], Ink::AndOff, Ink::NandOff))
-                  --(p.states[second].activeInputs);
+                  --p.states[second].activeInputs;
 
             auto const idx = p.writeMap.ptr[first] + accu[first]++;
             p.writeMap.rows[idx] = second;
@@ -286,7 +287,6 @@ void
 Preprocessor::search(int const x, int const y)
 {
       int const top_idx = calc_index(x, y);
-
       if (visited[0][top_idx] & 1)
             return;
 
@@ -368,7 +368,7 @@ Preprocessor::search(int const x, int const y)
                                     continue;
 
                               // Hold my beer, we're jumping in.
-                              explore_bus(newComp, bus_pix, mask, gid);
+                              explore_bus(newComp, bus_pix, mask);
 
                               if (visited[0][newIdx] & 1) {
                                     auto const otherIdx = p.indexImage[newIdx];
@@ -383,10 +383,7 @@ Preprocessor::search(int const x, int const y)
                   if (visited[0][newIdx] & 1) {
                         if (ink == Ink::BusOff && newInk != Ink::BusOff && get_mask(p.image[idx])) {
                               // Try to insert new connection
-                              auto const otherIdx = p.indexImage[newIdx];
-                              auto const shifted  = static_cast<int64_t>(gid) << 32;
-                              if (bundleConsSet.insert(shifted | otherIdx).second)
-                                    bundleCons.emplace(otherIdx, gid);
+                              tryInsertConnection(gid, newIdx);
                         }
                         continue;
                   }
@@ -439,7 +436,7 @@ Preprocessor::search(int const x, int const y)
 }
 
 void
-Preprocessor::explore_bus(glm::ivec2 const pos, InkPixel const &pix, uint64_t const mask, int const gid)
+Preprocessor::explore_bus(glm::ivec2 const pos, InkPixel const &pix, uint64_t const mask)
 {
       auto const idx = calc_index(pos);
       bundleStack.push_back(pos);
@@ -459,7 +456,7 @@ Preprocessor::explore_bus(glm::ivec2 const pos, InkPixel const &pix, uint64_t co
 
                   int   newIdx = calc_index(newComp);
                   auto &newVis = visited[0][newIdx];
-                  auto newPix  = p.image[newIdx];
+                  auto  newPix = p.image[newIdx];
 
                   // Let's not waste time.
                   if (newPix.ink == Ink::None)
@@ -566,7 +563,6 @@ Preprocessor::handle_tunnel(unsigned const nindex,
       for (auto tunComp = newComp + neighbor; ; tunComp += neighbor)
       {
             if (!validate_vector(tunComp)) {
-                  // BUG ERROR ERROR ERROR ERROR
                   push_tunnel_exit_not_found_error(neighbor, newComp);
                   return false;
             }
@@ -578,7 +574,6 @@ Preprocessor::handle_tunnel(unsigned const nindex,
       retry:
             tunComp += neighbor;
             if (!validate_vector(tunComp)) {
-                  // BUG ERROR ERROR ERROR ERROR
                   push_tunnel_exit_not_found_error(neighbor, newComp);
                   return false;
             }
@@ -603,13 +598,12 @@ Preprocessor::handle_tunnel(unsigned const nindex,
                   return true;
             }
 
-            auto tmpComp = tunComp - neighbor;
-            tmpComp -= neighbor;
-            tunIdx = calc_index(tmpComp);
+            auto errComp = tunComp - neighbor - neighbor;
+            errComp -= neighbor;
+            tunIdx = calc_index(errComp);
             tunPix = p.image[tunIdx];
             if (tunPix == p.image[idx]) {
-                  // BUG ERROR ERROR ERROR ERROR
-                  push_invalid_tunnel_entrance_error(origComp, tmpComp);
+                  push_invalid_tunnel_entrance_error(origComp, errComp);
                   return false;
             }
       }
@@ -676,6 +670,15 @@ Preprocessor::handle_write_ink(glm::ivec2 const vec)
 }
 
 /*--------------------------------------------------------------------------------------*/
+
+
+void Preprocessor::tryInsertConnection(int const gid, int const newIdx)
+{
+      auto const otherIdx = p.indexImage[newIdx];
+      auto const shifted  = static_cast<int64_t>(gid) << 32;
+      if (bundleConsSet.insert(shifted | otherIdx).second)
+            bundleCons.emplace(otherIdx, gid);
+}
 
 bool Preprocessor::validate_vector(glm::ivec2 const nvec) const
 {

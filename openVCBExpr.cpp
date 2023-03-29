@@ -192,8 +192,7 @@ void
 parser::eval_expr7(int64_t &result)
 {
       char op = 0;
-      if (tok_type == DELIMITER && (*token == '!' || *token == '~' || *token == '+' || *
-                                    token == '-')) {
+      if (tok_type == DELIMITER && (*token == '!' || *token == '~' || *token == '+' || * token == '-')) {
             op = *token;
             get_token();
       }
@@ -227,7 +226,7 @@ parser::eval_expr8(int64_t &result)
             if (isdigit(*token)) {
                   int const id = tolower(*(token + 1));
                   if (id == 'x') {
-                        char *ptr = token + 2;
+                        char const *ptr = token + 2;
                         result    = 0;
                         while (*ptr) {
                               int val = tolower(*ptr++);
@@ -237,7 +236,7 @@ parser::eval_expr8(int64_t &result)
                               }
                         }
                   } else if (id == 'b') {
-                        char *ptr = token + 2;
+                        char const *ptr = token + 2;
                         result    = 0;
                         while (*ptr) {
                               if (*ptr != '_')
@@ -253,8 +252,7 @@ parser::eval_expr8(int64_t &result)
                         if (endp && *endp != '\0')
                               formatError("Invalid character \"%c\" in number", *endp);
                         else if (result > UINT32_MAX)
-                              formatError("Number \"%jd\" is too large to fit in 32-bits",
-                                          result);
+                              formatError("Number \"%" PRId64 "\" is too large to fit in 32-bits", result);
                         else if (e == ERANGE)
                               setError("Number is out of range");
                   }
