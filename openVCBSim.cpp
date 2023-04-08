@@ -99,23 +99,17 @@ Project::tick(int32_t const numTicks, int64_t const maxEvents)
                         case Logic::ZeroOff:    nextActive = lastInputs == 0;   break;
                         case Logic::XorOff:     nextActive = lastInputs & 1;    break;
                         case Logic::XnorOff:    nextActive = !(lastInputs & 1); break;
-                        default:                nextActive = false;             break;
-                        case Logic::LatchOff:
-                              nextActive = lastActive ^ (lastInputs & 1);
-                              break;
-                        case Logic::ClockOff:
-                              nextActive = tickClock.is_zero() ? !lastActive : lastActive;
-                              break;
-                        case Logic::TimerOff:
-                              nextActive = realtimeClock.is_zero() ? !lastActive : lastActive;
-                              break;
-                        case Logic::RandomOff:
-                              nextActive = lastInputs > 0 && (lastActive || GetRandomBit());
-                              break;
+                        case Logic::LatchOff:   nextActive = lastActive ^ (lastInputs & 1);                      break;
+                        case Logic::ClockOff:   nextActive = tickClock.is_zero() ? !lastActive : lastActive;     break;
+                        case Logic::TimerOff:   nextActive = realtimeClock.is_zero() ? !lastActive : lastActive; break;
+                        case Logic::RandomOff:  nextActive = lastInputs > 0 && (lastActive || GetRandomBit());   break;
                         case Logic::BreakpointOff:
                               nextActive = lastInputs > 0;
                               if (nextActive)
                                     res.breakpoint = true;
+                              break;
+                        default:
+                              nextActive = false;
                               break;
                         }
 

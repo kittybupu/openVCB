@@ -297,6 +297,32 @@ typedef int32_t ssize_t;
 typedef int16_t ssize_t;
 #endif
 
+#ifdef __cplusplus
+# define DELETE_COPY_CTORS(t)               \
+      t(t const &)                = delete; \
+      t &operator=(t const &)     = delete
+
+# define DELETE_MOVE_CTORS(t)               \
+      t(t &&) noexcept            = delete; \
+      t &operator=(t &&) noexcept = delete
+
+# define DEFAULT_COPY_CTORS(t)               \
+      t(t const &)                = default; \
+      t &operator=(t const &)     = default
+
+# define DEFAULT_MOVE_CTORS(t)               \
+      t(t &&) noexcept            = default; \
+      t &operator=(t &&) noexcept = default
+
+# define DELETE_ALL_CTORS(t) \
+      DELETE_COPY_CTORS(t);  \
+      DELETE_MOVE_CTORS(t)
+
+#define DEFAULT_ALL_CTORS(t) \
+      DEFAULT_COPY_CTORS(t); \
+      DEFAULT_MOVE_CTORS(t)
+#endif
+
 /*======================================================================================*/
 
 #ifdef __cplusplus

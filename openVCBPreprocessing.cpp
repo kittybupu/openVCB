@@ -169,7 +169,7 @@ Preprocessor::do_it()
       // Split up the ordering by ink vs. comp.
       // Hopefully groups things better in memory.
       p.writeMap.n = 0;
-      p.indexImage = new int32_t[canvas_size]{-1};
+      p.indexImage = new int32_t[canvas_size];
       std::fill_n(p.indexImage, canvas_size, -1);
 
       for (int i = 0; i < canvas_size; ++i)
@@ -203,13 +203,13 @@ Preprocessor::do_it()
       p.writeMap.ptr = new int[p.writeMap.n + 1];
 
       for (int i = 0; i < p.writeMap.n; ++i) {
-            Group const &g  = indexDict[i];
-            InkState    &s  = p.states[i];
-            s.logic         = g.logic;
-            s.visited       = false;
-            s.activeInputs  = 0;
-            p.stateInks[i]  = g.ink;
+            Group const &g = indexDict[i];
+            InkState    &s = p.states[i];
+            s.logic        = g.logic;
+            s.visited      = false;
+            s.activeInputs = 0;
 
+            p.stateInks[i]        = g.ink;
             p.writeMap.ptr[g.gid] = i;
       }
 
@@ -432,7 +432,7 @@ Preprocessor::search(int const x, int const y)
       }
 
       // Add on the new group
-      indexDict.push_back({gid, inkLogicType(ink), pix.ink});
+      indexDict.push_back({gid, (inkLogicType(ink)), pix.ink});
 }
 
 void
@@ -449,8 +449,8 @@ Preprocessor::explore_bus(glm::ivec2 const pos, InkPixel const &pix, uint64_t co
 
             // Check four directions
             for (unsigned nindex = 0; nindex < 4; ++nindex) {
-                  glm::ivec2 const &neighbor = fourNeighbors[nindex];
-                  glm::ivec2 newComp = comp + neighbor;
+                  auto const neighbor = fourNeighbors[nindex];
+                  auto       newComp  = comp + neighbor;
                   if (!validate_vector(newComp))
                         continue;
 
@@ -698,7 +698,7 @@ int32_t Preprocessor::calc_index(int const x, int const y) const
 
 glm::ivec2 Preprocessor::get_pos_from_index(int const idx) const
 {
-      auto const [quot, rem] = std::div(idx, p.width);
+      auto const [quot, rem] = ::div(idx, p.width);
       return {rem, quot};
 }
 
@@ -712,7 +712,7 @@ Preprocessor::push_tunnel_exit_not_found_error(glm::ivec2 const neighbor,
                         : neighbor.y == 1  ? "south"
                                            : "north";
       char      *buf  = p.error_messages->push_blank(128);
-      auto const size = sprintf(
+      auto const size = ::sprintf(
           buf,
           R"(Error @ (%d, %d): No exit tunnel found in a search to the %s.)",
           tunComp.x, tunComp.y, dir);
@@ -724,8 +724,8 @@ void
 Preprocessor::push_invalid_tunnel_entrance_error(glm::ivec2 const origComp,
                                                  glm::ivec2 const tmpComp) const
 {
-      char      *buf = p.error_messages->push_blank(128);
-      auto const size = sprintf(
+      char      *buf  = p.error_messages->push_blank(128);
+      auto const size = ::sprintf(
             buf,
             "Error @ (%d, %d) & (%d, %d): Two consecutive tunnel entrances for the same ink found.",
             origComp.x, origComp.y, tmpComp.x, tmpComp.y);

@@ -1,4 +1,10 @@
 #include "openVCB.h"
+ 
+#ifndef NDEBUG
+# ifndef _DEBUG
+#  define _DEBUG
+# endif
+#endif
 
 
 /*--------------------------------------------------------------------------------------*/
@@ -6,8 +12,9 @@ namespace openVCB::util {
 
 static FILE *log = nullptr;
 
-void logf(PRINTF_FORMAT_STRING format, ...)
+void logf(UU PRINTF_FORMAT_STRING format, ...)
 {
+#ifdef _DEBUG
       if (!log)
             return;
       va_list ap;
@@ -16,22 +23,27 @@ void logf(PRINTF_FORMAT_STRING format, ...)
       va_end(ap);
       std::ignore = fputc('\n', log);
       std::ignore = fflush(log);
+#endif
 }
 
-void logs(char const *msg, size_t const len)
+void logs(UU char const *msg, UU size_t const len)
 {
+#ifdef _DEBUG
       if (!log)
             return;
       std::ignore = fwrite(msg, 1, len, log);
       std::ignore = fputc('\n', log);
+#endif
 }
 
-void logs(char const *msg)
+void logs(UU char const *msg)
 {
+#ifdef _DEBUG
       if (!log)
             return;
       std::ignore = fputs(msg, log);
       std::ignore = fputc('\n', log);
+#endif
 }
 
 } // namespace openVCB::util
@@ -50,9 +62,9 @@ DllMain(HINSTANCE const inst, DWORD const fdwReason, LPVOID)
 
       switch (fdwReason) {
       case DLL_PROCESS_ATTACH: {
-# if defined _DEBUG || !defined NDEBUG
+# ifdef _DEBUG
             std::ignore = ::_set_abort_behavior(0, _WRITE_ABORT_MSG);
-            std::ignore = ::signal(SIGABRT, SIG_IGN);
+            std::ignore = ::signal(SIGABRT, [](int){});
 
             std::filesystem::path base;
             {
@@ -75,8 +87,10 @@ DllMain(HINSTANCE const inst, DWORD const fdwReason, LPVOID)
       }
 
       case DLL_PROCESS_DETACH:
+# ifdef _DEBUG
             if (openVCB::util::log)
                   std::ignore = fclose(openVCB::util::log);
+# endif
             break;
 
       case DLL_THREAD_ATTACH:
