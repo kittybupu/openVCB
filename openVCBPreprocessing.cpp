@@ -15,6 +15,8 @@ namespace openVCB {
 
 class Preprocessor
 {
+      static_assert(sizeof(int) == sizeof(int32_t));
+
       struct Group {
             int   gid;
             Logic logic;
@@ -30,8 +32,7 @@ class Preprocessor
       Preprocessor &operator=(Preprocessor const &)     = delete;
       Preprocessor &operator=(Preprocessor &&) noexcept = delete;
 
-      void do_it();
-      void tryInsertConnection(int gid, int newIdx);
+      void run();
 
       /*--------------------------------------------------------------------------------*/
 
@@ -45,9 +46,9 @@ class Preprocessor
       bool handle_tunnel(unsigned nindex, bool ignoreMask, int idx, int &newIdx,
                          Ink &newInk, glm::ivec2 &newComp);
 
-      ND bool    validate_vector(glm::ivec2 nvec) const;
-      ND int32_t calc_index(glm::ivec2 vec) const;
-      ND int32_t calc_index(int x, int y) const;
+      ND bool validate_vector(glm::ivec2 nvec) const;
+      ND int  calc_index(glm::ivec2 vec) const;
+      ND int  calc_index(int x, int y) const;
 
       ND glm::ivec2 get_pos_from_index(int idx) const;
 
@@ -139,13 +140,13 @@ Preprocessor::Preprocessor(Project &proj) noexcept
 
 
 void
-Preprocessor::do_it()
+Preprocessor::run()
 {
       delete p.error_messages;
       p.error_messages = new StringArray(32);
 
        // Turn off any inks that start as off
-//#pragma omp parallel for schedule(static, 8192)
+#pragma omp parallel for schedule(static, 8192)
       for (int i = 0; i < canvas_size; i++) {
             switch (p.image[i].ink) {  // NOLINT(clang-diagnostic-switch-enum)
             default:
@@ -169,7 +170,7 @@ Preprocessor::do_it()
       // Split up the ordering by ink vs. comp.
       // Hopefully groups things better in memory.
       p.writeMap.n = 0;
-      p.indexImage = new int32_t[canvas_size];
+      p.indexImage = new int[canvas_size];
       std::fill_n(p.indexImage, canvas_size, -1);
 
       for (int i = 0; i < canvas_size; ++i)
@@ -321,12 +322,9 @@ Preprocessor::search(int const x, int const y)
       case Ink::Wireless3Off:
       case Ink::Wireless4Off: {
             auto const i = Ink::Wireless4Off - ink;
-            if (wirelessIDs[i] < 0) {
-                  gid = p.writeMap.n++;
-                  wirelessIDs[i] = gid;
-            } else {
-                  gid = wirelessIDs[i];
-            }
+            if (wirelessIDs[i] < 0)
+                  wirelessIDs[i] = p.writeMap.n++;
+            gid = wirelessIDs[i];
             break;
       }
 
@@ -381,9 +379,12 @@ Preprocessor::search(int const x, int const y)
                   }
 
                   if (visited[0][newIdx] & 1) {
-                        if (ink == Ink::BusOff && newInk != Ink::BusOff && get_mask(p.image[idx])) {
+                        if (ink == Ink::BusOff && newInk != Ink::BusOff && get_mask(p.image[idx]) != 0) {
                               // Try to insert new connection
-                              tryInsertConnection(gid, newIdx);
+                              auto const otherIdx = p.indexImage[newIdx];
+                              auto const shifted  = static_cast<int64_t>(gid) << 32;
+                              if (bundleConsSet.insert(shifted | otherIdx).second)
+                                    bundleCons.emplace(otherIdx, gid);
                         }
                         continue;
                   }
@@ -544,7 +545,7 @@ Preprocessor::explore_bus(glm::ivec2 const pos, InkPixel const &pix, uint64_t co
 bool
 Preprocessor::handle_tunnel(unsigned const nindex,
                             bool const     ignoreMask,
-                            int32_t const  idx,
+                            int const      idx,
                             int           &newIdx,
                             Ink           &newInk,
                             glm::ivec2    &newComp)
@@ -672,26 +673,18 @@ Preprocessor::handle_write_ink(glm::ivec2 const vec)
 /*--------------------------------------------------------------------------------------*/
 
 
-void Preprocessor::tryInsertConnection(int const gid, int const newIdx)
-{
-      auto const otherIdx = p.indexImage[newIdx];
-      auto const shifted  = static_cast<int64_t>(gid) << 32;
-      if (bundleConsSet.insert(shifted | otherIdx).second)
-            bundleCons.emplace(otherIdx, gid);
-}
-
 bool Preprocessor::validate_vector(glm::ivec2 const nvec) const
 {
       return nvec.x >= 0 && nvec.x < p.width  &&
              nvec.y >= 0 && nvec.y < p.height;
 }
 
-int32_t Preprocessor::calc_index(glm::ivec2 const vec) const
+int Preprocessor::calc_index(glm::ivec2 const vec) const
 {
       return vec.x + vec.y * p.width;
 }
 
-int32_t Preprocessor::calc_index(int const x, int const y) const
+int Preprocessor::calc_index(int const x, int const y) const
 {
       return x + y * p.width;
 }
@@ -711,7 +704,8 @@ Preprocessor::push_tunnel_exit_not_found_error(glm::ivec2 const neighbor,
                         : neighbor.x == -1 ? "west"
                         : neighbor.y == 1  ? "south"
                                            : "north";
-      char      *buf  = p.error_messages->push_blank(128);
+      char *buf = p.error_messages->push_blank(128);
+      // Overflow isn't possible for this size of buffer, so sprintf is fine.
       auto const size = ::sprintf(
           buf,
           R"(Error @ (%d, %d): No exit tunnel found in a search to the %s.)",
@@ -724,7 +718,8 @@ void
 Preprocessor::push_invalid_tunnel_entrance_error(glm::ivec2 const origComp,
                                                  glm::ivec2 const tmpComp) const
 {
-      char      *buf  = p.error_messages->push_blank(128);
+      char *buf = p.error_messages->push_blank(128);
+      // Overflow isn't possible for this size of buffer, so sprintf is fine.
       auto const size = ::sprintf(
             buf,
             "Error @ (%d, %d) & (%d, %d): Two consecutive tunnel entrances for the same ink found.",
@@ -740,7 +735,7 @@ Preprocessor::push_invalid_tunnel_entrance_error(glm::ivec2 const origComp,
 Project::preprocess()
 {
       Preprocessor pp(*this);
-      pp.do_it();
+      pp.run();
       util::logs("--------------------------------------------------------------------------------", 80);
 }
 

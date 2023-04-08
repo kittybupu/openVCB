@@ -399,14 +399,14 @@ NODISCARD constexpr uint64_t bswap_64(uint64_t const val) noexcept {
 # ifndef NO_bswap_SUPPORT
       if (::std::is_constant_evaluated())
 # endif
-            return ((val << 56) & 0xFF00'0000'0000'0000) |
-                   ((val << 40) & 0x00FF'0000'0000'0000) |
-                   ((val << 24) & 0x0000'FF00'0000'0000) |
-                   ((val <<  8) & 0x0000'00FF'0000'0000) |
-                   ((val >>  8) & 0x0000'0000'FF00'0000) |
-                   ((val >> 24) & 0x0000'0000'00FF'0000) |
-                   ((val >> 40) & 0x0000'0000'0000'FF00) |
-                   ((val >> 56) & 0x0000'0000'0000'00FF);
+            return ((val << 070) & UINT64_C(0xFF00'0000'0000'0000)) |
+                   ((val << 050) & UINT64_C(0x00FF'0000'0000'0000)) |
+                   ((val << 030) & UINT64_C(0x0000'FF00'0000'0000)) |
+                   ((val << 010) & UINT64_C(0x0000'00FF'0000'0000)) |
+                   ((val >> 010) & UINT64_C(0x0000'0000'FF00'0000)) |
+                   ((val >> 030) & UINT64_C(0x0000'0000'00FF'0000)) |
+                   ((val >> 050) & UINT64_C(0x0000'0000'0000'FF00)) |
+                   ((val >> 070) & UINT64_C(0x0000'0000'0000'00FF));
 # ifndef NO_bswap_SUPPORT
       else
             return bswap_native_64(val);
