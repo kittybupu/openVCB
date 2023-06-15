@@ -45,12 +45,12 @@ simFunc()
             auto curTime = clock::now();
             auto diff    = duration_cast<duration<double>>(curTime - lastTime).count();
             lastTime     = curTime;
-            desiredTicks = std::min(desiredTicks + diff * double(targetTPS), tpsEst * MIN_DT);
+            desiredTicks = glm::min(desiredTicks + diff * double(targetTPS), tpsEst * MIN_DT);
 
             // Find max tick amount we can do
             if (desiredTicks >= 1.0) {
-                  double     maxTickAmount = std::max(tpsEst * TARGET_DT, 1.0);
-                  auto const tickAmount    = int32_t(std::min(desiredTicks, maxTickAmount));
+                  double     maxTickAmount = glm::max(tpsEst * TARGET_DT, 1.0);
+                  auto const tickAmount    = int32_t(glm::min(desiredTicks, maxTickAmount));
 
                   // Aquire lock, simulate, and time
                   simLock.lock();
@@ -123,7 +123,7 @@ getVMemAddress()
 {
 #ifdef OVCB_BYTE_ORIENTED_VMEM 
       if (proj->vmemIsBytes)
-            return proj->lastVMemAddr / 4;
+            return proj->lastVMemAddr / 4U;
       else
             return proj->lastVMemAddr;
 #else
@@ -140,6 +140,8 @@ setTickRate(float const tps)
 EXPORT_API void
 tick(int const tick)
 {
+      if (!proj)
+            return;
       float const tps = targetTPS;
       targetTPS       = 0;
       simLock.lock();
@@ -316,9 +318,9 @@ setImageMemory(int *data, int const width, int const height)
 
 EXPORT_API void
 setDecoMemory(int *__restrict const       indices,
-              int const                   indLen,
+              UU int const                indLen,
               int const *__restrict const col,
-              int const                   colLen)
+              UU int const                colLen)
 {
       std::queue<glm::ivec3> queue;
       std::vector            visited(size_t(proj->width * proj->height), false);

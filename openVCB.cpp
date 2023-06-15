@@ -82,7 +82,7 @@ Project::sample(glm::ivec2 const pos) const
       if (idx == -1)
             return {Ink::None, -1};
 
-      type = (type & 0x7F) | static_cast<unsigned>(states[idx].logic & 0x80);
+      type = (type & 0x7F) | (states[idx].logic & 0x80);
       return {type, idx};
 }
 

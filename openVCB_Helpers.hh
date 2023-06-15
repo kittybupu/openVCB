@@ -42,9 +42,8 @@ ND OVCB_CONSTEXPR Logic operator| (Logicc val1, uintc  val2) { return static_cas
 ND OVCB_CONSTEXPR Logic operator& (Logicc val1, Logicc val2) { return static_cast<Logic>(static_cast<uint>(val1) & static_cast<uint>(val2)); }
 ND OVCB_CONSTEXPR Logic operator| (Logicc val1, Logicc val2) { return static_cast<Logic>(static_cast<uint>(val1) | static_cast<uint>(val2)); }
 
-template <typename T> requires Integral<T>
-ND OVCB_CONSTEXPR bool
-operator==(Logic const op1, T const op2)
+template <Integral T>
+ND OVCB_CONSTEXPR bool operator==(Logic const op1, T const op2)
 {
       return op1 == static_cast<Logic>(op2);
 }
@@ -61,12 +60,16 @@ ND OVCB_CONSTEXPR int operator+ (Inkc val1, intc  val2) { return static_cast<int
 ND OVCB_CONSTEXPR int operator- (Inkc val1, Inkc  val2) { return static_cast<int>(val1) - static_cast<int>(val2); }
 ND OVCB_CONSTEXPR int operator- (Inkc val1, intc  val2) { return static_cast<int>(val1) - val2; }
 
-template <typename T> requires Integral<T>
-ND OVCB_CONSTEXPR bool
-operator==(Ink const op1, T const op2)
+template <Integral T>
+ND OVCB_CONSTEXPR bool operator==(Ink const op1, T const op2)
 {
       return op1 == static_cast<Ink>(op2);
 }
+
+ND OVCB_CONSTEXPR Ink   operator|(Inkc val1, Logicc val2) { return static_cast<Ink>(static_cast<uint>(val1) | static_cast<uint>(val2)); }
+ND OVCB_CONSTEXPR Ink   operator&(Inkc val1, Logicc val2) { return static_cast<Ink>(static_cast<uint>(val1) & static_cast<uint>(val2)); }
+ND OVCB_CONSTEXPR Logic operator|(Logicc val1, Inkc val2) { return static_cast<Logic>(static_cast<uint>(val1) | static_cast<uint>(val2)); }
+ND OVCB_CONSTEXPR Logic operator&(Logicc val1, Inkc val2) { return static_cast<Logic>(static_cast<uint>(val1) & static_cast<uint>(val2)); }
 
 #undef intc
 #undef uintc
@@ -343,6 +346,8 @@ class StringArray
 
 class RandomBitProvider
 {
+      using random_type = std::mt19937;
+
     public:
       RandomBitProvider()
           : random_engine_(rnd_device_()), current_(random_engine_())
@@ -370,10 +375,9 @@ class RandomBitProvider
       static constexpr int num_bits = 32U;
       inline static std::random_device rnd_device_{};
 
-      std::mt19937 random_engine_;
-      uint32_t     current_;
-      int          avail_ = num_bits;
-
+      random_type random_engine_;
+      uint32_t    current_;
+      int         avail_ = num_bits;
 };
 
 /*--------------------------------------------------------------------------------------*/

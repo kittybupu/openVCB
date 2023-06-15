@@ -4,16 +4,7 @@
 #include "openVCB.h"
 #include "openVCB_Expr.hh"
 
-#include <array>
-
-#if defined _WIN64
-typedef long long ssize_t;
-#elif defined _WIN32
-typedef int ssize_t;
-#endif
-
-namespace openVCB
-{
+namespace openVCB {
 /****************************************************************************************/
 
 
@@ -222,7 +213,7 @@ Project::dumpVMemToText(std::string const &p) const
       if (!file) {
             auto const e = std::system_error{errno, std::generic_category()};
             std::cerr << "Error opening file \"" << p
-                  << "\" for VMem dumping: " << e.what() << '\n';
+                      << "\" for VMem dumping: " << e.what() << '\n';
             return;
       }
 

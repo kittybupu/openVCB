@@ -58,11 +58,10 @@ Project::tick(int32_t const numTicks, int64_t const maxEvents)
                         if (!states[gid].visited)
                               updateQ[0][qSize++] = gid;
 
-            if (!realtimeClock.GIDs.empty()) [[unlikely]]
-                  if (realtimeClock.tick()) [[unlikely]]
-                        for (auto const gid : realtimeClock.GIDs)
-                              if (!states[gid].visited)
-                                    updateQ[0][qSize++] = gid;
+            if (!realtimeClock.GIDs.empty() && realtimeClock.tick()) [[unlikely]]
+                  for (auto const gid : realtimeClock.GIDs)
+                        if (!states[gid].visited)
+                              updateQ[0][qSize++] = gid;
 
             for (int traceUpdate = 0; traceUpdate < 2; ++traceUpdate) {
                   // We update twice per tick
@@ -87,31 +86,10 @@ Project::tick(int32_t const numTicks, int64_t const maxEvents)
 
                   // Main update loop
                   for (uint i = 0; i < numEvents; ++i) {
-                        int   const gid        = updateQ[0][i];
-                        auto  const curInk     = states[gid];
-                        bool  const lastActive = IsOn(curInk.logic);
-                        int   const lastInputs = lastActiveInputs[i];
-                        bool        nextActive;
-
-                        // NOLINTNEXTLINE(clang-diagnostic-switch-enum)
-                        switch (SetOff(curInk.logic)) {
-                        case Logic::NonZeroOff: nextActive = lastInputs != 0;   break;
-                        case Logic::ZeroOff:    nextActive = lastInputs == 0;   break;
-                        case Logic::XorOff:     nextActive = lastInputs & 1;    break;
-                        case Logic::XnorOff:    nextActive = !(lastInputs & 1); break;
-                        case Logic::LatchOff:   nextActive = lastActive ^ (lastInputs & 1);                      break;
-                        case Logic::ClockOff:   nextActive = tickClock.is_zero() ? !lastActive : lastActive;     break;
-                        case Logic::TimerOff:   nextActive = realtimeClock.is_zero() ? !lastActive : lastActive; break;
-                        case Logic::RandomOff:  nextActive = lastInputs > 0 && (lastActive || GetRandomBit());   break;
-                        case Logic::BreakpointOff:
-                              nextActive = lastInputs > 0;
-                              if (nextActive)
-                                    res.breakpoint = true;
-                              break;
-                        default:
-                              nextActive = false;
-                              break;
-                        }
+                        int  const gid        = updateQ[0][i];
+                        auto const curInk     = states[gid];
+                        bool const lastActive = IsOn(curInk.logic);
+                        bool const nextActive = resolve_state(res, curInk, lastActive, lastActiveInputs[i]);
 
                         // Short circuit if the state didnt change
                         if (lastActive == nextActive)
@@ -151,6 +129,34 @@ Project::tick(int32_t const numTicks, int64_t const maxEvents)
       }
 
       return res;
+}
+
+
+[[__gnu__::__hot__]] OVCB_INLINE bool
+Project::resolve_state(SimulationResult &res,
+                       InkState const    curInk,
+                       bool const        lastActive,
+                       int const         lastInputs)
+{
+      // NOLINTNEXTLINE(clang-diagnostic-switch-enum)
+      switch (SetOff(curInk.logic)) {
+      case Logic::NonZeroOff: return lastInputs != 0;
+      case Logic::ZeroOff:    return lastInputs == 0;
+      case Logic::XorOff:     return lastInputs & 1;
+      case Logic::XnorOff:    return !(lastInputs & 1);
+      case Logic::LatchOff:   return lastActive ^ (lastInputs & 1);
+      case Logic::RandomOff:  return lastInputs > 0 && (lastActive || GetRandomBit());
+      case Logic::ClockOff:   return tickClock.is_zero()     ? !lastActive : lastActive;
+      case Logic::TimerOff:   return realtimeClock.is_zero() ? !lastActive : lastActive;
+      case Logic::BreakpointOff: {
+            bool const ret = lastInputs > 0;
+            if (ret)
+                  res.breakpoint = true;
+            return ret;
+      }
+      default:
+            return false;
+      }
 }
 
 

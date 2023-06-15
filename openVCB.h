@@ -128,14 +128,14 @@ enum class Logic : uint8_t {
       _numTypes,
       _ink_on = 0x80,
 
-      NonZero  = NonZeroOff  | _ink_on,
-      Zero     = ZeroOff     | _ink_on,
-      Xor      = XorOff      | _ink_on,
-      Xnor     = XnorOff     | _ink_on,
-      Latch    = LatchOff    | _ink_on,
-      Clock    = ClockOff    | _ink_on,
-      Timer    = TimerOff    | _ink_on,
-      Random   = RandomOff   | _ink_on,
+      NonZero    = NonZeroOff    | _ink_on,
+      Zero       = ZeroOff       | _ink_on,
+      Xor        = XorOff        | _ink_on,
+      Xnor       = XnorOff       | _ink_on,
+      Latch      = LatchOff      | _ink_on,
+      Clock      = ClockOff      | _ink_on,
+      Timer      = TimerOff      | _ink_on,
+      Random     = RandomOff     | _ink_on,
       Breakpoint = BreakpointOff | _ink_on,
 };
 
@@ -317,6 +317,9 @@ class Project
       //---------------------------------------------------------------------------------
 
     private:
+      [[__gnu__::__hot__]]
+      ND OVCB_INLINE bool resolve_state(SimulationResult &res, InkState curInk, bool lastActive, int lastInputs);
+
       [[__gnu__::__hot__]]
       OVCB_CONSTEXPR bool tryEmit(int32_t gid);
 

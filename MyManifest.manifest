@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly
-	xmlns="urn:schemas-microsoft-com:asm.v1"
-	xmlns:asmv3="urn:schemas-microsoft-com:asm.v3"
-	manifestVersion="1.0" >
+        xmlns="urn:schemas-microsoft-com:asm.v1"
+        xmlns:asmv3="urn:schemas-microsoft-com:asm.v3"
+        manifestVersion="1.0">
 
-	<asmv3:compatibility xmlns="urn:schemas-microsoft-com:compatibility.v3">
-		<asmv3:application>
-			<!--This Id value indicates the application supports Windows 10+ functionality -->
-			<supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"/>
-		</asmv3:application>
-	</asmv3:compatibility>
+    <asmv3:compatibility xmlns="urn:schemas-microsoft-com:compatibility.v3">
+        <asmv3:application>
+            <!--This Id value indicates the application supports Windows 10+ functionality.-->
+            <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"/>
+        </asmv3:application>
+    </asmv3:compatibility>
 
-	<asmv3:application>
-		<asmv3:windowsSettings xmlns:ws2="http://schemas.microsoft.com/SMI/2016/WindowsSettings">
-			<ws2:longPathAware>true</ws2:longPathAware>
-		</asmv3:windowsSettings>
-	</asmv3:application>
+    <asmv3:application>
+        <asmv3:windowsSettings xmlns:ws2="http://schemas.microsoft.com/SMI/2016/WindowsSettings">
+            <ws2:longPathAware>true</ws2:longPathAware>
+        </asmv3:windowsSettings>
+    </asmv3:application>
 
-	<asmv3:assemblyIdentity
-		type="win32"
-		name="kittybupu.openVCB"
-		version="6.0.0.0"
-		processorArchitecture="amd64"
-		publicKeyToken="0000000000000000"/>
+    <asmv3:assemblyIdentity
+        type="win32"
+        name="kittybupu.openVCB"
+        version="6.0.0.0"
+        processorArchitecture="amd64"
+        publicKeyToken="0000000000000000"/>
 </assembly>
 
