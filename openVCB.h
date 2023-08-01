@@ -203,8 +203,8 @@ class Project
     public:
       // This remains null if VMem is not actually used.
       VMemWrapper vmem         = nullptr;
-      uint64_t    vmemSize     = 0;
-      uint64_t    lastVMemAddr = 0;
+      uint32_t    vmemSize     = 0;
+      uint32_t    lastVMemAddr = 0;
 
       LatchInterface vmAddr    = {{}, {}, {}, -1, {}};
       LatchInterface vmData    = {{}, {}, {}, -1, {}};
@@ -242,9 +242,9 @@ class Project
       Ink *stateInks = nullptr;
 
       // Map of symbols during assembleVmem().
-      std::map<std::string, int64_t> assemblySymbols;
-      std::map<int64_t, int64_t>     lineNumbers;
-      std::vector<InstrumentBuffer>  instrumentBuffers;
+      std::map<std::string, uint32_t> assemblySymbols;
+      std::map<uint32_t, uint32_t>    lineNumbers;
+      std::vector<InstrumentBuffer>   instrumentBuffers;
 
       uint64_t tickNum = 0;
 

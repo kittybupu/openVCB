@@ -89,21 +89,16 @@ class Preprocessor
 
       /*--------------------------------------------------------------------------------*/
 
-      ND static constexpr uint64_t get_tunnel_mask(unsigned const i)
-      {
-            return UINT64_C(2) << (16 + (i % 4U));
-      }
-
       ND static constexpr uint64_t get_mask(InkPixel const &pix)
       {
             return get_mask(pix.ink, pix.meta);
       }
 
-      ND static constexpr uint64_t get_mask(Ink const ink, int const meta = 0)
+      ND static constexpr uint64_t get_mask(Ink const ink, unsigned const meta = 0)
       {
             switch (ink) {
             case Ink::TraceOff:      return UINT64_C(2) << meta;
-            case Ink::TunnelOff:     return UINT64_C(30) << 16; // Mask for any tunnel.
+            case Ink::TunnelOff:     return UINT64_C(2) << (16 + (meta % 4));
             case Ink::BusOff:        return UINT64_C(2) << (20 + meta);
             case Ink::ReadOff:       return UINT64_C(2) << 26;
             case Ink::WriteOff:      return UINT64_C(2) << 27;
@@ -296,7 +291,7 @@ Preprocessor::search(ivec const vec)
             return;
 
       // DFS
-      std::vector          stack{vec};
+      std::vector stack{vec};
       visited.normal()[top_idx] |= 1;
 
       while (!stack.empty())
@@ -330,6 +325,7 @@ Preprocessor::search(ivec const vec)
 
                         if (mask != 0) {
                               if (!(visited.normal()[newIdx] & 1)) {
+                                    // BUG What the heck is this doing?
                                     std::vector<ivec> backup;
                                     std::swap(stack, backup);
                                     search(newComp);
@@ -602,7 +598,7 @@ Preprocessor::handle_tunnel(unsigned const nindex,
       auto const &neighbor = fourNeighbors[nindex];
       auto const  origComp = newComp;
       auto const  origPix  = p.image[calc_index(origComp - neighbor)];
-      auto const  origMask = get_tunnel_mask(nindex);
+      auto const  origMask = get_mask(Ink::TunnelOff, nindex);
 
       if (!ignoreMask) {
             if (visited.normal()[idx] & origMask)
@@ -638,8 +634,8 @@ Preprocessor::handle_tunnel(unsigned const nindex,
 
             if (tunPix == origPix) {
                   if (!ignoreMask) {
-                        // get_tunnel_mask() ensures its argument is between 0 and 3.
-                        auto const mask = get_tunnel_mask(nindex + 2);
+                        // get_mask() for tunnels ensures that its argument is between 0 and 3.
+                        auto const mask = get_mask(Ink::TunnelOff, nindex + 2);
                         if (tunVis & mask)
                               return false;
                         tunVis |= mask;

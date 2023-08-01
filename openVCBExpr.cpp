@@ -9,7 +9,7 @@
 
 namespace openVCB
 {
-using SymMap = std::map<std::string, int64_t>;
+using SymMap = std::map<std::string, uint32_t>;
 
 enum types : uint8_t { DELIMITER = 1, VARIABLE };
 
@@ -32,7 +32,7 @@ class parser {
       void get_token();
 
       template <size_t SrcSize>
-            requires(sizeof errormsg >= SrcSize)
+          requires(sizeof errormsg >= SrcSize)
       __inline constexpr void setError(char const (&src)[SrcSize])
       {
             ::memcpy(errormsg, src, SrcSize);
@@ -324,7 +324,7 @@ parser::formatError(PRINTF_FORMAT_STRING fmt, ...)
       return ret;
 }
 
-int64_t
+uint32_t
 evalExpr(char const *expr, SymMap &symbols, char *errp, size_t const errSize)
 {
       parser        p(symbols);
@@ -337,6 +337,6 @@ evalExpr(char const *expr, SymMap &symbols, char *errp, size_t const errSize)
                   ::fprintf(stderr, "error: \"%s\" %s\n", expr, p.getError());
       }
 
-      return res;
+      return static_cast<uint32_t>(res);
 }
 } // namespace openVCB

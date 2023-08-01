@@ -43,25 +43,25 @@ getNext(char *buf, size_t &pos)
 }
 
 static std::string
-getNextLine(char const *buf, size_t &pos, size_t &lineNum)
+getNextLine(char const *buf, uint32_t &pos, uint32_t &lineNum)
 {
       while (buf[pos] && (isspace(buf[pos]) || buf[pos] == ';'))
             if (buf[pos++] == '\n')
                   ++lineNum;
 
-      size_t const start = pos;
-      ssize_t      end   = -1;
+      uint32_t const start = pos;
+      int64_t        end   = -1;
 
       while (buf[pos] && buf[pos] != '\n' && buf[pos] != ';') {
             if (end < 0 && buf[pos] == '#')
-                  end = static_cast<ssize_t>(pos);
+                  end = static_cast<int64_t>(pos);
             ++pos;
       }
 
       if (buf[pos] == '\n')
             ++lineNum;
       if (end < 0)
-            end = static_cast<ssize_t>(pos);
+            end = static_cast<int64_t>(pos);
 
       // XXX Again here, must this be a copy?
       return {buf + start, buf + end};
@@ -81,10 +81,10 @@ Project::assembleVmem(char *errp, size_t errSize)
 
       // Scan through everything once to obtain values for labels
       assemblySymbols.clear();
-      size_t      loc       = 1;
-      size_t      lineLoc   = 0;
-      size_t      lineNum   = 0;
       char const *asmBuffer = assembly.data();
+      uint32_t    loc       = 1;
+      uint32_t    lineNum   = 0;
+      uint32_t    lineLoc   = 0;
 
       while (lineLoc < assembly.size()) {
             // Read a line in.
@@ -95,8 +95,11 @@ Project::assembleVmem(char *errp, size_t errSize)
 
             // Parse this stuff
             if (prefix(buf, "symbol") || prefix(buf, "resymb")) {
+                  /* nothing */
             } else if (prefix(buf, "unsymb")) {
+                  /* nothing */
             } else if (prefix(buf, "unpoint")) {
+                  /* nothing */
             } else if (prefix(buf, "pointer") || prefix(buf, "repoint")) {
                   size_t      k     = 7;
                   std::string label = getNext(buf, k);
@@ -108,7 +111,9 @@ Project::assembleVmem(char *errp, size_t errSize)
                   std::string label      = getNext(buf, k);
                   assemblySymbols[label] = loc;
             } else if (prefix(buf, "bookmark")) {
+                  /* nothing */
             } else if (prefix(buf, "sub_bookmark")) {
+                  /* nothing */
             } else {
                   ++loc;
             }
@@ -120,7 +125,7 @@ Project::assembleVmem(char *errp, size_t errSize)
       lineNum = 0;
 
       while (lineLoc != assembly.size()) {
-            size_t lNum = lineNum;
+            uint32_t lNum = lineNum;
             // Read a line in.
             std::string line = getNextLine(asmBuffer, lineLoc, lineNum);
             if (line.empty())
@@ -193,8 +198,7 @@ Project::assembleVmem(char *errp, size_t errSize)
                   glm::ivec2 pos = data.pos + i * data.stride;
                   data.gids[i]   = indexImage[pos.x + pos.y * width];
 
-                  if (data.gids[i] == -1 ||
-                      SetOff(states[data.gids[i]].logic) != Logic::LatchOff) {
+                  if (data.gids[i] == -1 || SetOff(states[data.gids[i]].logic) != Logic::LatchOff) {
                         ::printf("error: No %s latch at VMem position %d %d\n",
                                  msg, pos.x, pos.y);
                         ::exit(1);

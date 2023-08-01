@@ -180,7 +180,7 @@ Project::handleWordVMemTick()
       // Get current address
       uint32_t addr = 0;
       for (int k = 0; k < vmAddr.numBits; ++k)
-            addr |= static_cast<uint>(IsOn(states[vmAddr.gids[k]].logic)) << k;
+            addr |= static_cast<uint32_t>(IsOn(states[vmAddr.gids[k]].logic)) << k;
 
       if (addr != lastVMemAddr) {
             // Load address
@@ -210,7 +210,7 @@ Project::handleWordVMemTick()
             // Write address
             uint32_t data = 0;
             for (int k = 0; k < vmData.numBits; ++k)
-                  data |= static_cast<uint>(IsOn(states[vmData.gids[k]].logic)) << k;
+                  data |= static_cast<uint32_t>(IsOn(states[vmData.gids[k]].logic)) << k;
 
             vmem.i[addr] = data;
       }
@@ -224,14 +224,15 @@ Project::handleByteVMemTick()
       // Get current address
       uint32_t addr = 0;
       for (int k = 0; k < vmAddr.numBits; ++k)
-            addr |= static_cast<uint>(IsOn(states[vmAddr.gids[k]].logic)) << k;
+            addr |= static_cast<uint32_t>(IsOn(states[vmAddr.gids[k]].logic)) << k;
 
       if (addr != lastVMemAddr) {
             // Load address
             uint32_t data = 0;
             lastVMemAddr  = addr;
 
-# ifdef USE_GNU_INLINE_ASM
+# if 1
+#  ifdef USE_GNU_INLINE_ASM
             // We can use Intel syntax. Hooray.
             __asm__ __volatile__ (
                   "mov	%[data], [%[vmem] + %q[addr]]"
@@ -239,9 +240,12 @@ Project::handleByteVMemTick()
                   : [vmem] "r" (vmem.b), [addr] "r" (addr)
                   :
             );
-# else
+#  else
             data = ::openVCB_evil_assembly_bit_manipulation_routine_getVMem(vmem.b, addr);
-# endif
+#  endif
+# else
+            memcpy(&data, vmem.b + addr, sizeof data);
+#endif
 
             // Turn on those latches
             for (int k = 0; k < vmData.numBits; ++k) {
@@ -264,9 +268,10 @@ Project::handleByteVMemTick()
             // Write address
             uint32_t data = 0;
             for (int k = 0; k < vmData.numBits; ++k)
-                  data |= static_cast<uint>(IsOn(states[vmData.gids[k]].logic)) << k;
+                  data |= static_cast<uint32_t>(IsOn(states[vmData.gids[k]].logic)) << k;
 
-# ifdef USE_GNU_INLINE_ASM
+# if 1
+#  ifdef USE_GNU_INLINE_ASM
             __asm__ __volatile__ (
                   "shrx	eax, [%[vmem] + %q[addr]], %[numBits]" "\n\t"
                   "shlx	rax, rax, %q[numBits]"                 "\n\t"
@@ -277,8 +282,13 @@ Project::handleByteVMemTick()
                     [data] "r" (data),   [numBits] "r" (vmData.numBits)
                   : "cc", "rax"
             );
-# else
+#  else
             openVCB_evil_assembly_bit_manipulation_routine_setVMem(vmem.b, addr, data, vmData.numBits);
+#  endif
+# else
+            data = data >> vmData.numBits;
+            data = static_cast<uint32_t>(static_cast<uint64_t>(data) << vmData.numBits);
+            memcpy(vmem.b + addr, &data, sizeof data);
 # endif
       }
 }

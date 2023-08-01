@@ -11,12 +11,13 @@
 
 #include <cstdint>
 
-namespace openVCB
-{
-long long evalExpr(char const *                    expr,
-                   std::map<std::string, int64_t> &symbols,
-                   char *                          errp    = nullptr,
-                   size_t                          errSize = 256);
+namespace openVCB {
+
+uint32_t evalExpr(char const                      *expr,
+                  std::map<std::string, uint32_t> &symbols,
+                  char                            *errp    = nullptr,
+                  size_t                           errSize = 256);
+
 } // namespace openVCB
 
 #endif
